@@ -2,6 +2,10 @@
 
 A compact Sudoku game built for quick play in the browser.
 
+## Play
+
+Open the live game at https://mgiberts.github.io/sudoku/
+
 ## Stack
 
 - React
@@ -11,12 +15,11 @@ A compact Sudoku game built for quick play in the browser.
 
 ## Roadmap
 
-### 1. Become a GitHub Pages site
+### 1. GitHub Pages site
 
-- Set the correct Vite `base` path for the repository name.
-- Add a GitHub Actions workflow that runs `bun install`, `bun run build`, and publishes `dist/`.
-- Enable GitHub Pages for the repository and point it at the workflow deployment.
-- Verify direct page loads and refreshes work from the deployed URL.
+- Published at https://mgiberts.github.io/sudoku/
+- Uses a GitHub Actions workflow to build and deploy `dist/`.
+- Uses Vite `base: "/sudoku/"` for repository Pages hosting.
 
 ### 2. Become an offline page
 

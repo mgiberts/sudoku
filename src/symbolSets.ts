@@ -1,9 +1,9 @@
 import type { Digit, SymbolSet } from "./types";
 
 export const symbolSetLabels: Record<SymbolSet, string> = {
-	digits: "1-9",
-	kanji: "六 Kanji",
-	emoji: "🤘 Emoji",
+	digits: "9",
+	kanji: "六",
+	emoji: "🤘",
 };
 export const symbolSetOptions = Object.keys(symbolSetLabels) as SymbolSet[];
 export const symbolSets: Record<SymbolSet, Record<Digit, string>> = {
