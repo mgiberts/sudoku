@@ -28,13 +28,11 @@ export const Header = ({
 	return (
 		<>
 			<header className="top-bar">
-				<div>
+				<div className="title-group">
 					<p className="eyebrow">{difficultyLabels[state.difficulty]}</p>
-					<h1 style={{ textTransform: "uppercase", textWrap: "nowrap" }}>
-						{gameName}
-					</h1>
+					<h1>{gameName}</h1>
 				</div>
-				<div>
+				<div className="app-settings">
 					<button
 						className={`icon-button settings-button ${
 							settingsOpen ? "active" : ""
@@ -48,41 +46,37 @@ export const Header = ({
 				</div>
 			</header>
 
-			<div className="sub-bar">
-				<div className="stats">
-					<ElapsedTime />
-					<Stat label="Errors" value={String(state.errors)} />
-				</div>
+			<div className="sub-bar stats">
+				<ElapsedTime />
+				<Stat label="Errors" value={String(state.errors)} />
 			</div>
 
 			<div className="controls-row">
-				<div className="icon-actions">
-					<button
-						aria-pressed={state.pencilMode}
-						className={`icon-button ${state.pencilMode ? "active" : ""}`}
-						onClick={() => dispatch({ type: "toggle-pencil" })}
-						title="Pencil mode"
-						type="button"
-					>
-						{pencilIcon}
-					</button>
-					<button
-						className="icon-button"
-						onClick={() => dispatch({ type: "erase" })}
-						title="Erase"
-						type="button"
-					>
-						{eraserIcon}
-					</button>
-					<button
-						className="icon-button"
-						onClick={onReset}
-						title="Reset"
-						type="button"
-					>
-						{resetIcon}
-					</button>
-				</div>
+				<button
+					aria-pressed={state.pencilMode}
+					className={`icon-button ${state.pencilMode ? "active" : ""}`}
+					onClick={() => dispatch({ type: "toggle-pencil" })}
+					title="Pencil mode"
+					type="button"
+				>
+					{pencilIcon}
+				</button>
+				<button
+					className="icon-button"
+					onClick={() => dispatch({ type: "erase" })}
+					title="Erase"
+					type="button"
+				>
+					{eraserIcon}
+				</button>
+				<button
+					className="icon-button"
+					onClick={onReset}
+					title="Reset"
+					type="button"
+				>
+					{resetIcon}
+				</button>
 			</div>
 		</>
 	);

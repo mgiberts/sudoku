@@ -35,6 +35,12 @@
 	--shadow-dialog: rgba(15, 23, 42, 0.28);
 	--backdrop: rgba(15, 23, 42, 0.42);
 	--radius: 8px;
+	--space-1: 2px;
+	--space-2: 4px;
+	--space-3: 8px;
+	--space-4: 12px;
+	--space-5: 16px;
+	--space-6: 24px;
 	--ambient-a: rgba(15, 118, 110, 0.12);
 	--ambient-b: rgba(202, 138, 4, 0.13);
 	--sparkle: #ca8a04;
@@ -156,7 +162,7 @@ button {
 .app-shell {
 	min-height: 100vh;
 	display: block;
-	padding: 12px;
+	padding: var(--space-4);
 	background:
 		linear-gradient(135deg, var(--ambient-a), transparent 38%),
 		linear-gradient(315deg, var(--ambient-b), transparent 32%), var(--app-bg);
@@ -164,30 +170,44 @@ button {
 
 .game-stage {
 	width: min(100%, 520px);
-	min-height: calc(100vh - 24px);
+	min-height: calc(100vh - var(--space-6));
 	margin: 0 auto;
 	display: flex;
 	flex-direction: column;
-	gap: 12px;
+	gap: var(--space-4);
 	justify-content: start;
 }
 
 .top-bar,
-.controls-row {
-	display: flex;
-	align-items: stretch;
-	justify-content: space-between;
-	flex-direction: column;
-	gap: 10px;
+.controls-row,
+.sub-bar {
+	display: grid;
+	grid-template-columns: repeat(12, 1fr);
+	gap: var(--space-3);
+}
+
+.title-group {
+	text-transform: uppercase;
+	text-wrap: "nowrap";
+	grid-column: span 6 / span 6;
+}
+
+.app-settings {
+	grid-column: span 1 / span 1;
+	grid-column-start: 12;
+}
+
+.controls-row button {
+	grid-column: span 4 / span 4;
+	width: 100%;
 }
 
 .eyebrow {
-	margin: 0 0 2px;
+	margin: 0 0 var(--space-1);
 	color: var(--text-muted);
 	font-size: 0.82rem;
 	font-weight: 700;
 	letter-spacing: 0;
-	text-transform: uppercase;
 }
 
 h1,
@@ -198,21 +218,21 @@ h2 {
 }
 
 h1 {
-	font-size: 2rem;
+	font-size: 1.6rem;
 	line-height: 1;
 }
 
 .stats {
 	display: flex;
 	align-items: stretch;
-	gap: 10px;
+	gap: var(--space-3);
 	width: 100%;
 }
 
 .stat {
 	flex: 1;
 	min-width: 0;
-	padding: 9px 12px;
+	padding: var(--space-3) var(--space-4);
 	/* border: 1px solid var(--border-strong); */
 	border-radius: var(--radius);
 	background: var(--surface-soft);
@@ -229,24 +249,23 @@ h1 {
 
 .stat strong {
 	display: block;
-	margin-top: 2px;
+	margin-top: var(--space-1);
 	color: var(--text-strong);
 	font-size: 1.08rem;
 	font-variant-numeric: tabular-nums;
 }
 
-.segmented,
-.icon-actions {
+.segmented {
 	display: flex;
 	align-items: center;
-	gap: 8px;
+	gap: var(--space-3);
 	width: 100%;
 }
 
 .segmented {
 	min-inline-size: 0;
 	margin: 0;
-	padding: 4px;
+	padding: var(--space-2);
 	border: 1px solid var(--border);
 	border-radius: var(--radius);
 	background: var(--surface-soft);
@@ -276,7 +295,7 @@ legend {
 	flex: 1;
 	min-width: 0;
 	min-height: 36px;
-	padding: 0 12px;
+	padding: 0 var(--space-4);
 	border-radius: var(--radius);
 	color: var(--text-muted);
 	background: transparent;
@@ -319,7 +338,7 @@ legend {
 	display: flex;
 	align-items: flex-start;
 	justify-content: center;
-	padding: 12px;
+	padding: var(--space-4);
 	pointer-events: none;
 }
 
@@ -345,8 +364,8 @@ legend {
 	z-index: 1;
 	width: min(100%, 520px);
 	display: grid;
-	gap: 10px;
-	padding: 12px;
+	gap: var(--space-3);
+	padding: var(--space-4);
 	border: 1px solid var(--border-strong);
 	border-radius: var(--radius);
 	pointer-events: auto;
@@ -359,7 +378,7 @@ legend {
 	display: flex;
 	align-items: center;
 	justify-content: space-between;
-	gap: 12px;
+	gap: var(--space-4);
 }
 
 .settings-header h2 {
@@ -389,7 +408,6 @@ legend {
 	display: grid;
 	grid-template-columns: repeat(9, 1fr);
 	grid-template-rows: repeat(9, 1fr);
-	/* border: 3px solid var(--grid-line); */
 	background: var(--grid-line);
 	box-shadow: 0 20px 48px var(--shadow-board);
 	border-radius: var(--radius);
@@ -511,7 +529,7 @@ legend {
 .keypad {
 	display: grid;
 	grid-template-columns: repeat(9, 1fr);
-	gap: 5px;
+	gap: var(--space-3);
 	min-inline-size: 0;
 	margin: 0;
 	padding: 0;
@@ -591,13 +609,14 @@ legend {
 	inset: 0;
 	display: grid;
 	place-items: center;
-	padding: 24px;
+	padding: var(--space-6);
 	background: var(--backdrop);
+	z-index: 10;
 }
 
 .dialog {
 	width: min(100%, 330px);
-	padding: 28px;
+	padding: var(--space-6);
 	border-radius: var(--radius);
 	background: var(--surface);
 	text-align: center;
@@ -609,19 +628,23 @@ legend {
 }
 
 .dialog h2 {
-	margin: 10px 0 4px;
+	margin: var(--space-3) 0 var(--space-2);
 	font-size: 1.8rem;
 }
 
 .dialog p {
-	margin: 0 0 18px;
+	margin: 0 0 var(--space-5);
 	color: var(--text-muted);
 }
 
 .dialog-actions {
 	display: flex;
 	justify-content: center;
-	gap: 10px;
+	gap: var(--space-3);
+}
+
+.dialog .primary-action svg {
+	color: var(--surface);
 }
 
 .primary-action,
@@ -630,10 +653,32 @@ legend {
 	display: inline-flex;
 	align-items: center;
 	justify-content: center;
-	gap: 8px;
-	padding: 0 18px;
+	gap: var(--space-3);
+	padding: 0 var(--space-5);
 	border-radius: var(--radius);
 	font-weight: 780;
+}
+
+.app-footer {
+	position: fixed;
+	right: var(--space-4);
+	bottom: var(--space-4);
+	z-index: 5;
+	height: var(--space-4);
+	line-height: var(--space-4);
+}
+
+.app-footer a {
+	color: var(--text-soft);
+	font-size: 0.72rem;
+	font-weight: 700;
+	letter-spacing: 0;
+	text-decoration: none;
+	text-transform: uppercase;
+}
+
+.app-footer a:hover {
+	color: var(--text-strong);
 }
 
 .secondary-action {
@@ -659,33 +704,23 @@ button:focus-visible {
 
 @media (min-width: 720px) {
 	.app-shell {
-		padding: 24px;
+		padding: var(--space-6);
 	}
 
 	.settings-layer {
-		padding: 24px;
+		padding: var(--space-6);
 	}
 
 	.game-stage {
 		min-height: auto;
-		gap: 16px;
-	}
-
-	.top-bar {
-		align-items: space-between;
-		flex-direction: row;
-		display: flex;
+		gap: var(--space-5);
 	}
 
 	h1 {
 		font-size: 2.7rem;
 	}
 
-	.controls-row {
-		flex-direction: row;
-	}
-
 	.keypad {
-		gap: 8px;
+		gap: var(--space-3);
 	}
 }

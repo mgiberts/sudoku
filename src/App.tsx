@@ -1,7 +1,7 @@
 import { Play, RotateCcw, Sparkles } from "lucide-react";
 import { type ReactNode, useState } from "react";
 import { Board } from "./Board";
-import { formatDuration } from "./ElapsedTime";
+import { formatDuration } from "./formatDuration";
 import { Header } from "./Header";
 import { ModalSettings } from "./ModalSettings";
 import { SettingsProvider } from "./SettingsContext";
@@ -33,6 +33,16 @@ const SudokuApp = () => {
 
 				<Board />
 			</section>
+
+			<footer className="app-footer">
+				<a
+					href="https://github.com/mgiberts/sudoku"
+					rel="noreferrer"
+					target="_blank"
+				>
+					GitHub
+				</a>
+			</footer>
 
 			<ModalSettings
 				open={settingsOpen}
