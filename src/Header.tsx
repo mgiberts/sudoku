@@ -34,9 +34,7 @@ export const Header = ({
 						{gameName}
 					</h1>
 				</div>
-				<div className="stats">
-					<ElapsedTime />
-					<Stat label="Errors" value={String(state.errors)} />
+				<div>
 					<button
 						className={`icon-button settings-button ${
 							settingsOpen ? "active" : ""
@@ -49,6 +47,13 @@ export const Header = ({
 					</button>
 				</div>
 			</header>
+
+			<div className="sub-bar">
+				<div className="stats">
+					<ElapsedTime />
+					<Stat label="Errors" value={String(state.errors)} />
+				</div>
+			</div>
 
 			<div className="controls-row">
 				<div className="icon-actions">

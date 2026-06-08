@@ -307,6 +307,11 @@ legend {
 	flex: 0 0 44px;
 }
 
+.settings-button {
+	border: none;
+	background: transparent;
+}
+
 .settings-layer {
 	position: fixed;
 	z-index: 20;
@@ -667,8 +672,9 @@ button:focus-visible {
 	}
 
 	.top-bar {
-		align-items: center;
+		align-items: space-between;
 		flex-direction: row;
+		display: flex;
 	}
 
 	h1 {
