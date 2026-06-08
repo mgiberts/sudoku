@@ -1,0 +1,38 @@
+{
+	"name": "sudoku",
+	"private": true,
+	"version": "0.0.0",
+	"type": "module",
+	"scripts": {
+		"dev": "vite",
+		"build": "tsc && vite build",
+		"preview": "vite preview",
+		"lint": "bunx biome lint .",
+		"format": "bunx biome check --write --linter-enabled=false",
+		"format:check": "bunx biome check",
+		"format:all": "bun run format && bun run lint",
+		"pr:check": "bun run format:all && bun run typecheck && bun run test",
+		"test": "vitest run",
+		"test:fast": "vitest run --coverage=false",
+		"typecheck": "tsc --noEmit"
+	},
+	"dependencies": {
+		"lucide-react": "^0.468.0",
+		"react": "^19.2.4",
+		"react-dom": "^19.2.4"
+	},
+	"devDependencies": {
+		"@biomejs/biome": "^2.4.4",
+		"@testing-library/jest-dom": "^6.9.1",
+		"@testing-library/react": "^16.3.2",
+		"@testing-library/user-event": "^14.6.1",
+		"@types/node": "^25.3.2",
+		"@types/react": "^19.2.14",
+		"@types/react-dom": "^19.2.3",
+		"@vitejs/plugin-react": "^5.1.4",
+		"jsdom": "^28.1.0",
+		"typescript": "^5.9.3",
+		"vite": "^7.3.1",
+		"vitest": "^4.0.18"
+	}
+}
