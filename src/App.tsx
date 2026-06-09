@@ -34,16 +34,6 @@ const SudokuApp = () => {
 				<Board />
 			</section>
 
-			<footer className="app-footer">
-				<a
-					href="https://github.com/mgiberts/sudoku"
-					rel="noreferrer"
-					target="_blank"
-				>
-					GitHub
-				</a>
-			</footer>
-
 			<ModalSettings
 				open={settingsOpen}
 				onClose={() => setSettingsOpen(false)}

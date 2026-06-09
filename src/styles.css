@@ -659,16 +659,16 @@ legend {
 	font-weight: 780;
 }
 
-.app-footer {
-	position: fixed;
-	right: var(--space-4);
-	bottom: var(--space-4);
-	z-index: 5;
-	height: var(--space-4);
+.settings-footer {
+	height: var(--space-6);
 	line-height: var(--space-4);
+	text-align: right;
+	justify-content: flex-end;
+	align-items: center;
+	display: flex;
 }
 
-.app-footer a {
+.settings-footer a {
 	color: var(--text-soft);
 	font-size: 0.72rem;
 	font-weight: 700;
