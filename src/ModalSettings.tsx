@@ -1,4 +1,4 @@
-import { X } from "lucide-react";
+import { Moon, Sun, SunMoon, X } from "lucide-react";
 import { useSettings } from "./SettingsContext";
 import { symbolSetLabels, symbolSetOptions } from "./symbolSets";
 import type { Difficulty, ThemeSetting } from "./types";
@@ -48,6 +48,22 @@ export const ModalSettings = ({
 					</button>
 				</div>
 				<fieldset className="segmented settings-control">
+					<legend>Theme</legend>
+					{themeOptions.map((option) => (
+						<button
+							className={option === settings.theme ? "active" : ""}
+							key={option}
+							onClick={() => updateTheme(option)}
+							type="button"
+						>
+							{option === "light" && <Sun size={14} />}
+							{option === "dark" && <Moon size={14} />}
+							{option === "auto" && <SunMoon size={14} />}
+							{themeLabels[option]}
+						</button>
+					))}
+				</fieldset>
+				<fieldset className="segmented settings-control">
 					<legend>Difficulty</legend>
 					{difficultyOptions.map((option) => (
 						<button
@@ -70,19 +86,6 @@ export const ModalSettings = ({
 							type="button"
 						>
 							{symbolSetLabels[option]}
-						</button>
-					))}
-				</fieldset>
-				<fieldset className="segmented settings-control">
-					<legend>Theme</legend>
-					{themeOptions.map((option) => (
-						<button
-							className={option === settings.theme ? "active" : ""}
-							key={option}
-							onClick={() => updateTheme(option)}
-							type="button"
-						>
-							{themeLabels[option]}
 						</button>
 					))}
 				</fieldset>

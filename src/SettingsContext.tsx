@@ -17,12 +17,27 @@ import type {
 	ThemeSetting,
 } from "./types";
 
+const DIGITS: Digit[] = [1, 2, 3, 4, 5, 6, 7, 8, 9];
+const NUMBER_CLASSES = [
+	"n1",
+	"n2",
+	"n3",
+	"n4",
+	"n5",
+	"n6",
+	"n7",
+	"n8",
+	"n9",
+] as const;
+
 type SettingsContextValue = {
 	settings: SettingsState;
 	symbols: Record<Digit, string>;
 	updateDifficulty: (difficulty: Difficulty) => void;
 	updateSymbolSet: (symbolSet: SymbolSet) => void;
 	updateTheme: (theme: ThemeSetting) => void;
+	digits: Digit[];
+	numberClasses: readonly string[];
 };
 
 const SettingsContext = createContext<SettingsContextValue | undefined>(
@@ -61,6 +76,8 @@ export const SettingsProvider = ({ children }: { children: ReactNode }) => {
 			updateDifficulty,
 			updateSymbolSet,
 			updateTheme,
+			digits: DIGITS,
+			numberClasses: NUMBER_CLASSES,
 		};
 	}, [dispatch, settings]);
 

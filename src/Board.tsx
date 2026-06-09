@@ -1,26 +1,14 @@
 import { isDigitComplete } from "./gameState";
 import { useSettings } from "./SettingsContext";
 import { useGame } from "./SudokuContext";
-import type { Digit } from "./types";
-
-const DIGITS: Digit[] = [1, 2, 3, 4, 5, 6, 7, 8, 9];
-const NUMBER_CLASSES = [
-	"n1",
-	"n2",
-	"n3",
-	"n4",
-	"n5",
-	"n6",
-	"n7",
-	"n8",
-	"n9",
-] as const;
 
 export const Board = () => {
 	const { state, dispatch } = useGame();
 	const {
 		settings: { symbolSet },
 		symbols,
+		digits,
+		numberClasses,
 	} = useSettings();
 	const selectedCell = state.cells[state.selectedIndex];
 	const selectedValue = selectedCell?.value;
@@ -81,17 +69,17 @@ export const Board = () => {
 							{cell.value ? (
 								<span
 									className={`value symbol-${symbolSet} ${
-										NUMBER_CLASSES[cell.value - 1]
+										numberClasses[cell.value - 1]
 									}`}
 								>
 									{symbols[cell.value]}
 								</span>
 							) : (
 								<span className="notes" aria-hidden={cell.notes.length === 0}>
-									{DIGITS.map((digit) => (
+									{digits.map((digit) => (
 										<span
 											className={`note symbol-${symbolSet} ${
-												NUMBER_CLASSES[digit - 1]
+												numberClasses[digit - 1]
 											}`}
 											key={digit}
 										>
@@ -107,14 +95,14 @@ export const Board = () => {
 
 			<fieldset className="keypad">
 				<legend>Number entry</legend>
-				{DIGITS.map((digit) => {
+				{digits.map((digit) => {
 					const disabled = isDigitComplete(state.cells, digit);
 
 					return (
 						<button
 							aria-label={disabled ? `${digit} complete` : `Enter ${digit}`}
 							className={`key symbol-${symbolSet} ${
-								NUMBER_CLASSES[digit - 1]
+								numberClasses[digit - 1]
 							} ${selectedValue === digit ? "selected-value" : ""}`}
 							disabled={disabled}
 							key={digit}
