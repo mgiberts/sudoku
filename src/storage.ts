@@ -1,6 +1,9 @@
 import type {
+	BestTime,
+	BestTimes,
 	Difficulty,
 	GameState,
+	InputStyle,
 	NumberColorScheme,
 	SettingsState,
 	SymbolSet,
@@ -9,21 +12,37 @@ import type {
 
 const GAME_STORAGE_KEY = "sudoku.game.v1";
 const SETTINGS_STORAGE_KEY = "sudoku.settings.v1";
+const STATS_STORAGE_KEY = "sudoku.stats.v1";
 
 const DEFAULT_DIFFICULTY: Difficulty = "easy";
 const DEFAULT_SETTINGS: SettingsState = {
 	difficulty: DEFAULT_DIFFICULTY,
+	inputStyle: "single",
 	numberColorScheme: "color",
 	symbolSet: "digits",
 	theme: "auto",
 };
-const DIFFICULTIES = new Set<Difficulty>(["easy", "medium", "hard"]);
+const DIFFICULTIES = new Set<Difficulty>([
+	"easy",
+	"medium",
+	"hard",
+	"master",
+	"expert",
+]);
+const INPUT_STYLES = new Set<InputStyle>(["single", "flow"]);
 const NUMBER_COLOR_SCHEMES = new Set<NumberColorScheme>([
 	"color",
 	"monochrome",
 ]);
 const SYMBOL_SETS = new Set<SymbolSet>(["digits", "kanji", "emoji"]);
 const THEMES = new Set<ThemeSetting>(["light", "dark", "auto"]);
+export const BEST_TIME_ERROR_LIMITS: Record<Difficulty, number> = {
+	easy: 10,
+	medium: 10,
+	hard: 5,
+	master: 5,
+	expert: 3,
+};
 
 const createSudokuStorage = () => {
 	const removeGame = (): void => {
@@ -46,7 +65,11 @@ const createSudokuStorage = () => {
 				parsed.solution?.length === 81 &&
 				difficulty
 			) {
-				return { ...parsed, difficulty };
+				return {
+					...parsed,
+					difficulty,
+					selectedDigit: normalizeDigit(parsed.selectedDigit),
+				};
 			}
 		} catch {
 			removeGame();
@@ -76,6 +99,8 @@ const createSudokuStorage = () => {
 			return {
 				difficulty:
 					normalizeDifficulty(parsed.difficulty) ?? DEFAULT_SETTINGS.difficulty,
+				inputStyle:
+					normalizeInputStyle(parsed.inputStyle) ?? DEFAULT_SETTINGS.inputStyle,
 				numberColorScheme:
 					normalizeNumberColorScheme(parsed.numberColorScheme) ??
 					DEFAULT_SETTINGS.numberColorScheme,
@@ -93,16 +118,80 @@ const createSudokuStorage = () => {
 		localStorage.setItem(SETTINGS_STORAGE_KEY, JSON.stringify(settings));
 	};
 
+	const removeStats = (): void => {
+		localStorage.removeItem(STATS_STORAGE_KEY);
+	};
+
+	const loadBestTimes = (): BestTimes => {
+		const saved = localStorage.getItem(STATS_STORAGE_KEY);
+
+		if (!saved) {
+			return {};
+		}
+
+		try {
+			const parsed = JSON.parse(saved) as Partial<Record<Difficulty, BestTime>>;
+			const bestTimes: BestTimes = {};
+
+			for (const difficulty of DIFFICULTIES) {
+				const score = parsed[difficulty];
+
+				if (isBestTime(score)) {
+					bestTimes[difficulty] = score;
+				}
+			}
+
+			return bestTimes;
+		} catch {
+			removeStats();
+			return {};
+		}
+	};
+
+	const saveBestTimes = (bestTimes: BestTimes): void => {
+		localStorage.setItem(STATS_STORAGE_KEY, JSON.stringify(bestTimes));
+	};
+
+	const recordBestTime = (
+		difficulty: Difficulty,
+		score: BestTime,
+	): BestTimes => {
+		const bestTimes = loadBestTimes();
+		const threshold = BEST_TIME_ERROR_LIMITS[difficulty];
+
+		if (score.errors >= threshold) {
+			return bestTimes;
+		}
+
+		const current = bestTimes[difficulty];
+		const isBetter =
+			!current ||
+			score.seconds < current.seconds ||
+			(score.seconds === current.seconds && score.errors < current.errors);
+
+		if (!isBetter) {
+			return bestTimes;
+		}
+
+		const next = { ...bestTimes, [difficulty]: score };
+		saveBestTimes(next);
+		return next;
+	};
+
 	const loadDefaultDifficulty = (): Difficulty => {
 		return loadSettings().difficulty;
 	};
 
 	return {
+		loadBestTimes,
 		loadDefaultDifficulty,
 		loadGame,
 		loadSettings,
 		removeGame,
 		removeSettings,
+		removeStats,
+		recordBestTime,
+		saveBestTimes,
 		saveGame,
 		saveSettings,
 	};
@@ -124,6 +213,21 @@ const normalizeDifficulty = (difficulty?: string): Difficulty | null => {
 		: null;
 };
 
+const normalizeInputStyle = (inputStyle?: string): InputStyle | null => {
+	return INPUT_STYLES.has(inputStyle as InputStyle)
+		? (inputStyle as InputStyle)
+		: null;
+};
+
+const normalizeDigit = (digit: unknown): GameState["selectedDigit"] => {
+	return typeof digit === "number" &&
+		Number.isInteger(digit) &&
+		digit >= 1 &&
+		digit <= 9
+		? (digit as GameState["selectedDigit"])
+		: null;
+};
+
 const normalizeSymbolSet = (symbolSet?: string): SymbolSet | null => {
 	return SYMBOL_SETS.has(symbolSet as SymbolSet)
 		? (symbolSet as SymbolSet)
@@ -140,4 +244,20 @@ const normalizeNumberColorScheme = (
 
 const normalizeTheme = (theme?: string): ThemeSetting | null => {
 	return THEMES.has(theme as ThemeSetting) ? (theme as ThemeSetting) : null;
+};
+
+const isBestTime = (score: unknown): score is BestTime => {
+	if (!score || typeof score !== "object") {
+		return false;
+	}
+
+	const candidate = score as Partial<BestTime>;
+	return (
+		typeof candidate.seconds === "number" &&
+		Number.isFinite(candidate.seconds) &&
+		candidate.seconds >= 0 &&
+		typeof candidate.errors === "number" &&
+		Number.isInteger(candidate.errors) &&
+		candidate.errors >= 0
+	);
 };

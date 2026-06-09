@@ -8,6 +8,8 @@ import type { Cell, Difficulty, Digit, GameState } from "./types";
 
 export type GameAction =
 	| { type: "select"; index: number }
+	| { type: "select-and-enter"; index: number }
+	| { type: "select-digit"; digit: Digit }
 	| { type: "toggle-pencil" }
 	| { type: "enter"; digit: Digit }
 	| { type: "erase" }
@@ -20,6 +22,14 @@ export const gameReducer = (
 	switch (action.type) {
 		case "select":
 			return { ...state, selectedIndex: action.index };
+		case "select-and-enter":
+			return selectAndEnter(state, action.index);
+		case "select-digit":
+			return {
+				...state,
+				selectedDigit:
+					state.selectedDigit === action.digit ? null : action.digit,
+			};
 		case "toggle-pencil":
 			return { ...state, pencilMode: !state.pencilMode };
 		case "enter":
@@ -45,6 +55,7 @@ export const createInitialGame = (difficulty: Difficulty): GameState => {
 		})),
 		solution,
 		selectedIndex: puzzle.indexOf(null),
+		selectedDigit: null,
 		difficulty,
 		pencilMode: false,
 		errors: 0,
@@ -59,6 +70,33 @@ export const isDigitComplete = (cells: Cell[], digit: Digit): boolean => {
 	return (
 		cells.filter((cell) => cell.value === digit && !cell.invalid).length >= 9
 	);
+};
+
+export const hasPlayerProgress = (state: GameState): boolean => {
+	return (
+		state.errors > 0 ||
+		state.cells.some(
+			(cell) => !cell.given && (cell.value !== null || cell.notes.length > 0),
+		)
+	);
+};
+
+const selectAndEnter = (state: GameState, index: number): GameState => {
+	const selectedState = { ...state, selectedIndex: index };
+
+	if (state.selectedDigit === null) {
+		return selectedState;
+	}
+
+	if (state.cells[index]?.given) {
+		return selectedState;
+	}
+
+	if (!state.pencilMode && state.cells[index]?.value === state.selectedDigit) {
+		return eraseCell(selectedState);
+	}
+
+	return enterDigit(selectedState, state.selectedDigit);
 };
 
 const enterDigit = (state: GameState, digit: Digit): GameState => {

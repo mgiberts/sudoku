@@ -193,8 +193,11 @@ button {
 }
 
 .app-settings {
-	grid-column: span 1 / span 1;
-	grid-column-start: 12;
+	grid-column: span 2 / span 2;
+	grid-column-start: 11;
+	display: flex;
+	justify-content: flex-end;
+	gap: var(--space-2);
 }
 
 .controls-row button {
@@ -389,13 +392,57 @@ legend {
 
 .settings-control {
 	background: var(--surface-raised);
+	flex-wrap: wrap;
 }
 
 .settings-control button {
+	flex: 1 1 60px;
 	gap: var(--space-2);
 	display: flex;
 	justify-content: center;
 	align-items: center;
+}
+
+.best-times-list {
+	display: grid;
+	gap: var(--space-2);
+}
+
+.best-time-row {
+	display: grid;
+	grid-template-columns: 1fr auto auto;
+	align-items: center;
+	gap: var(--space-3);
+	min-height: 44px;
+	padding: 0 var(--space-4);
+	border: 1px solid var(--border);
+	border-radius: var(--radius);
+	background: var(--surface-soft);
+	font-variant-numeric: tabular-nums;
+}
+
+.best-time-row strong {
+	min-width: 0;
+	color: var(--text-strong);
+}
+
+.best-time-row span {
+	color: var(--text-muted);
+	font-weight: 720;
+	white-space: nowrap;
+}
+
+.score-errors.over-limit {
+	color: #dc2626;
+}
+
+:root[data-theme="dark"] .score-errors.over-limit {
+	color: #f87171;
+}
+
+.reset-scores {
+	width: 100%;
+	margin-top: var(--space-1);
 }
 
 @keyframes settings-slide-down {
@@ -631,7 +678,7 @@ legend {
 	place-items: center;
 	padding: var(--space-6);
 	background: var(--backdrop);
-	z-index: 10;
+	z-index: 40;
 }
 
 .dialog {

@@ -12,10 +12,14 @@ describe("sudoku generation", () => {
 		const easy = createPuzzle("easy", 12345).puzzle;
 		const medium = createPuzzle("medium", 12345).puzzle;
 		const hard = createPuzzle("hard", 12345).puzzle;
+		const master = createPuzzle("master", 12345).puzzle;
+		const expert = createPuzzle("expert", 12345).puzzle;
 
 		expect(easy.filter(Boolean)).toHaveLength(42);
 		expect(medium.filter(Boolean)).toHaveLength(34);
-		expect(hard.filter(Boolean)).toHaveLength(28);
+		expect(hard.filter(Boolean)).toHaveLength(26);
+		expect(master.filter(Boolean)).toHaveLength(24);
+		expect(expert.filter(Boolean)).toHaveLength(18);
 	});
 
 	it("keeps minimum revealed values in every block", () => {
@@ -27,6 +31,12 @@ describe("sudoku generation", () => {
 		).toBeGreaterThanOrEqual(2);
 		expect(
 			Math.min(...getBoxClueCounts(createPuzzle("hard", 12345).puzzle)),
+		).toBeGreaterThanOrEqual(1);
+		expect(
+			Math.min(...getBoxClueCounts(createPuzzle("master", 12345).puzzle)),
+		).toBeGreaterThanOrEqual(1);
+		expect(
+			Math.min(...getBoxClueCounts(createPuzzle("expert", 12345).puzzle)),
 		).toBeGreaterThanOrEqual(1);
 	});
 

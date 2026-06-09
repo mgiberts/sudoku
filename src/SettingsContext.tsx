@@ -6,12 +6,12 @@ import {
 	useMemo,
 	useState,
 } from "react";
-import { useGame } from "./SudokuContext";
 import { sudokuStorage } from "./storage";
 import { symbolSets } from "./symbolSets";
 import type {
 	Difficulty,
 	Digit,
+	InputStyle,
 	NumberColorScheme,
 	SettingsState,
 	SymbolSet,
@@ -35,6 +35,7 @@ type SettingsContextValue = {
 	settings: SettingsState;
 	symbols: Record<Digit, string>;
 	updateDifficulty: (difficulty: Difficulty) => void;
+	updateInputStyle: (inputStyle: InputStyle) => void;
 	updateNumberColorScheme: (numberColorScheme: NumberColorScheme) => void;
 	updateSymbolSet: (symbolSet: SymbolSet) => void;
 	updateTheme: (theme: ThemeSetting) => void;
@@ -47,7 +48,6 @@ const SettingsContext = createContext<SettingsContextValue | undefined>(
 );
 
 export const SettingsProvider = ({ children }: { children: ReactNode }) => {
-	const { dispatch } = useGame();
 	const [settings, setSettings] = useState(() => sudokuStorage.loadSettings());
 
 	useEffect(() => {
@@ -61,7 +61,10 @@ export const SettingsProvider = ({ children }: { children: ReactNode }) => {
 	const value = useMemo<SettingsContextValue>(() => {
 		const updateDifficulty = (difficulty: Difficulty) => {
 			setSettings((current) => ({ ...current, difficulty }));
-			dispatch({ type: "new-game", difficulty });
+		};
+
+		const updateInputStyle = (inputStyle: InputStyle) => {
+			setSettings((current) => ({ ...current, inputStyle }));
 		};
 
 		const updateSymbolSet = (symbolSet: SymbolSet) => {
@@ -80,13 +83,14 @@ export const SettingsProvider = ({ children }: { children: ReactNode }) => {
 			settings,
 			symbols: symbolSets[settings.symbolSet],
 			updateDifficulty,
+			updateInputStyle,
 			updateNumberColorScheme,
 			updateSymbolSet,
 			updateTheme,
 			digits: DIGITS,
 			numberClasses: NUMBER_CLASSES,
 		};
-	}, [dispatch, settings]);
+	}, [settings]);
 
 	return (
 		<SettingsContext.Provider value={value}>

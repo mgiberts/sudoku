@@ -10,7 +10,9 @@ type DifficultyConfig = {
 const difficultyConfig: Record<Difficulty, DifficultyConfig> = {
 	easy: { clues: 42, minCluesPerBox: 3 },
 	medium: { clues: 34, minCluesPerBox: 2 },
-	hard: { clues: 28, minCluesPerBox: 1 },
+	hard: { clues: 26, minCluesPerBox: 1 },
+	master: { clues: 24, minCluesPerBox: 1 },
+	expert: { clues: 18, minCluesPerBox: 1 },
 };
 
 export const createSeed = (): number => {

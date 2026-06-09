@@ -1,4 +1,4 @@
-import { Eraser, PenLine, RotateCcw, Settings } from "lucide-react";
+import { Eraser, PenLine, RotateCcw, Settings, Star } from "lucide-react";
 import { ElapsedTime } from "./ElapsedTime";
 import { difficultyLabels } from "./ModalSettings";
 import { useSettings } from "./SettingsContext";
@@ -6,15 +6,20 @@ import { Stat } from "./Stat";
 import { useGame } from "./SudokuContext";
 
 const settingsIcon = <Settings size={19} />;
+const bestTimesIcon = <Star size={19} />;
 const pencilIcon = <PenLine size={19} />;
 const eraserIcon = <Eraser size={19} />;
 const resetIcon = <RotateCcw size={19} />;
 
 export const Header = ({
+	bestTimesOpen,
+	onBestTimesToggle,
 	onReset,
 	onSettingsToggle,
 	settingsOpen,
 }: {
+	bestTimesOpen: boolean;
+	onBestTimesToggle: () => void;
 	onReset: () => void;
 	onSettingsToggle: () => void;
 	settingsOpen: boolean;
@@ -33,6 +38,16 @@ export const Header = ({
 					<h1>{gameName}</h1>
 				</div>
 				<div className="app-settings">
+					<button
+						className={`icon-button settings-button ${
+							bestTimesOpen ? "active" : ""
+						}`}
+						onClick={onBestTimesToggle}
+						title="Best times"
+						type="button"
+					>
+						{bestTimesIcon}
+					</button>
 					<button
 						className={`icon-button settings-button ${
 							settingsOpen ? "active" : ""

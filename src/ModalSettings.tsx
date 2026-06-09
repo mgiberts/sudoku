@@ -1,14 +1,28 @@
-import { Moon, Sun, SunMoon, X } from "lucide-react";
+import { Keyboard, Moon, MousePointerClick, Sun, SunMoon } from "lucide-react";
+import { ModalPanel } from "./ModalPanel";
 import { useSettings } from "./SettingsContext";
 import { symbolSetLabels, symbolSetOptions } from "./symbolSets";
-import type { Difficulty, NumberColorScheme, ThemeSetting } from "./types";
+import type {
+	Difficulty,
+	InputStyle,
+	NumberColorScheme,
+	ThemeSetting,
+} from "./types";
 
 const difficultyLabels: Record<Difficulty, string> = {
 	easy: "Easy",
 	medium: "Medium",
 	hard: "Hard",
+	master: "Master",
+	expert: "Expert",
 };
 const difficultyOptions = Object.keys(difficultyLabels) as Difficulty[];
+
+const inputStyleLabels: Record<InputStyle, string> = {
+	single: "Single",
+	flow: "Flow",
+};
+const inputStyleOptions = Object.keys(inputStyleLabels) as InputStyle[];
 
 const themeLabels: Record<ThemeSetting, string> = {
 	light: "Light",
@@ -26,107 +40,105 @@ const numberColorSchemeOptions = Object.keys(
 ) as NumberColorScheme[];
 
 export const ModalSettings = ({
+	onDifficultyChange,
 	open,
 	onClose,
 }: {
+	onDifficultyChange: (difficulty: Difficulty) => void;
 	open: boolean;
 	onClose: () => void;
 }) => {
 	const {
 		settings,
-		updateDifficulty,
+		updateInputStyle,
 		updateNumberColorScheme,
 		updateSymbolSet,
 		updateTheme,
 	} = useSettings();
 
 	return open ? (
-		<div className="settings-layer">
-			<button
-				aria-label="Close settings"
-				className="settings-backdrop"
-				onClick={onClose}
-				type="button"
-			/>
-			<section className="settings-panel" aria-label="Settings">
-				<div className="settings-header">
-					<h2>Settings</h2>
+		<ModalPanel label="Settings" onClose={onClose} open={open} title="Settings">
+			<fieldset className="segmented settings-control">
+				<legend>Theme</legend>
+				{themeOptions.map((option) => (
 					<button
-						className="icon-button compact"
-						onClick={onClose}
-						title="Close settings"
+						className={option === settings.theme ? "active" : ""}
+						key={option}
+						onClick={() => updateTheme(option)}
 						type="button"
 					>
-						<X size={18} />
+						{option === "light" && <Sun size={14} />}
+						{option === "dark" && <Moon size={14} />}
+						{option === "auto" && <SunMoon size={14} />}
+						{themeLabels[option]}
 					</button>
-				</div>
-				<fieldset className="segmented settings-control">
-					<legend>Theme</legend>
-					{themeOptions.map((option) => (
-						<button
-							className={option === settings.theme ? "active" : ""}
-							key={option}
-							onClick={() => updateTheme(option)}
-							type="button"
-						>
-							{option === "light" && <Sun size={14} />}
-							{option === "dark" && <Moon size={14} />}
-							{option === "auto" && <SunMoon size={14} />}
-							{themeLabels[option]}
-						</button>
-					))}
-				</fieldset>
-				<fieldset className="segmented settings-control">
-					<legend>Difficulty</legend>
-					{difficultyOptions.map((option) => (
-						<button
-							className={option === settings.difficulty ? "active" : ""}
-							key={option}
-							onClick={() => updateDifficulty(option)}
-							type="button"
-						>
-							{difficultyLabels[option]}
-						</button>
-					))}
-				</fieldset>
-				<fieldset className="segmented settings-control">
-					<legend>Symbols</legend>
-					{symbolSetOptions.map((option) => (
-						<button
-							className={option === settings.symbolSet ? "active" : ""}
-							key={option}
-							onClick={() => updateSymbolSet(option)}
-							type="button"
-						>
-							{symbolSetLabels[option]}
-						</button>
-					))}
-				</fieldset>
-				<fieldset className="segmented settings-control">
-					<legend>Board numbers</legend>
-					{numberColorSchemeOptions.map((option) => (
-						<button
-							className={option === settings.numberColorScheme ? "active" : ""}
-							key={option}
-							onClick={() => updateNumberColorScheme(option)}
-							type="button"
-						>
-							{numberColorSchemeLabels[option]}
-						</button>
-					))}
-				</fieldset>
-				<div className="settings-footer">
-					<a
-						href="https://github.com/mgiberts/sudoku"
-						rel="noreferrer"
-						target="_blank"
+				))}
+			</fieldset>
+			<fieldset className="segmented settings-control">
+				<legend>Difficulty</legend>
+				{difficultyOptions.map((option) => (
+					<button
+						className={option === settings.difficulty ? "active" : ""}
+						key={option}
+						onClick={() => onDifficultyChange(option)}
+						type="button"
 					>
-						GitHub
-					</a>
-				</div>
-			</section>
-		</div>
+						{difficultyLabels[option]}
+					</button>
+				))}
+			</fieldset>
+			<fieldset className="segmented settings-control">
+				<legend>Input style</legend>
+				{inputStyleOptions.map((option) => (
+					<button
+						className={option === settings.inputStyle ? "active" : ""}
+						key={option}
+						onClick={() => updateInputStyle(option)}
+						type="button"
+					>
+						{option === "single" && <Keyboard size={14} />}
+						{option === "flow" && <MousePointerClick size={14} />}
+						{inputStyleLabels[option]}
+					</button>
+				))}
+			</fieldset>
+			<fieldset className="segmented settings-control">
+				<legend>Symbols</legend>
+				{symbolSetOptions.map((option) => (
+					<button
+						className={option === settings.symbolSet ? "active" : ""}
+						key={option}
+						onClick={() => updateSymbolSet(option)}
+						type="button"
+					>
+						{symbolSetLabels[option]}
+					</button>
+				))}
+			</fieldset>
+			<fieldset className="segmented settings-control">
+				<legend>Board numbers</legend>
+				{numberColorSchemeOptions.map((option) => (
+					<button
+						className={option === settings.numberColorScheme ? "active" : ""}
+						key={option}
+						onClick={() => updateNumberColorScheme(option)}
+						type="button"
+					>
+						{numberColorSchemeLabels[option]}
+					</button>
+				))}
+			</fieldset>
+			<div className="settings-footer">
+				<a
+					href="https://github.com/mgiberts/sudoku"
+					rel="noreferrer"
+					target="_blank"
+				>
+					GitHub
+				</a>
+			</div>
+		</ModalPanel>
 	) : null;
 };
 
-export { difficultyLabels };
+export { difficultyLabels, difficultyOptions };

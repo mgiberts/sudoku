@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { gameReducer, isDigitComplete } from "./gameState";
+import { gameReducer, hasPlayerProgress, isDigitComplete } from "./gameState";
 import type { Digit, GameState } from "./types";
 
 const createTestState = (overrides: Partial<GameState> = {}): GameState => {
@@ -18,6 +18,7 @@ const createTestState = (overrides: Partial<GameState> = {}): GameState => {
 		})),
 		solution,
 		selectedIndex: 0,
+		selectedDigit: null,
 		difficulty: "easy",
 		pencilMode: false,
 		errors: 0,
@@ -80,6 +81,53 @@ describe("game state", () => {
 
 		expect(next.cells[0].value).toBeNull();
 		expect(next.cells[0].notes).toEqual([7]);
+	});
+
+	it("toggles the selected flow digit", () => {
+		const state = createTestState();
+		const selected = gameReducer(state, { type: "select-digit", digit: 7 });
+		const toggled = gameReducer(selected, { type: "select-digit", digit: 7 });
+
+		expect(selected.selectedDigit).toBe(7);
+		expect(toggled.selectedDigit).toBeNull();
+	});
+
+	it("enters the selected flow digit into a clicked editable cell", () => {
+		const state = createTestState({ selectedDigit: 1, selectedIndex: 5 });
+		const next = gameReducer(state, { type: "select-and-enter", index: 0 });
+
+		expect(next.selectedIndex).toBe(0);
+		expect(next.cells[0].value).toBe(1);
+		expect(next.completedAt).toEqual(expect.any(Number));
+	});
+
+	it("toggles a matching selected flow digit out of an editable cell", () => {
+		const state = createTestState({
+			selectedDigit: 4,
+			cells: createTestState().cells.map((cell, index) =>
+				index === 0 ? { ...cell, value: 4, invalid: true } : cell,
+			),
+			errors: 1,
+		});
+		const next = gameReducer(state, { type: "select-and-enter", index: 0 });
+
+		expect(next.selectedIndex).toBe(0);
+		expect(next.cells[0].value).toBeNull();
+		expect(next.cells[0].invalid).toBe(false);
+		expect(next.errors).toBe(1);
+	});
+
+	it("adds the selected flow digit as a note in pencil mode", () => {
+		const state = createTestState({
+			pencilMode: true,
+			selectedDigit: 4,
+			selectedIndex: 5,
+		});
+		const next = gameReducer(state, { type: "select-and-enter", index: 0 });
+
+		expect(next.selectedIndex).toBe(0);
+		expect(next.cells[0].value).toBeNull();
+		expect(next.cells[0].notes).toEqual([4]);
 	});
 
 	it("does not clear an invalid filled cell when entering notes", () => {
@@ -145,6 +193,7 @@ describe("game state", () => {
 		expect(next.cells).not.toEqual(state.cells);
 		expect(next.errors).toBe(0);
 		expect(next.completedAt).toBeNull();
+		expect(next.selectedDigit).toBeNull();
 	});
 
 	it("records completion when the last value is correct", () => {
@@ -168,5 +217,24 @@ describe("game state", () => {
 		});
 
 		expect(isDigitComplete(state.cells, 2)).toBe(false);
+	});
+
+	it("detects player progress from values, notes, or errors", () => {
+		const valueState = createTestState({
+			cells: createTestState().cells.map((cell, index) =>
+				index === 0 ? { ...cell, value: 1 } : cell,
+			),
+		});
+		const notesState = createTestState({
+			cells: createTestState().cells.map((cell, index) =>
+				index === 0 ? { ...cell, notes: [1] } : cell,
+			),
+		});
+		const errorState = createTestState({ errors: 1 });
+
+		expect(hasPlayerProgress(createTestState())).toBe(false);
+		expect(hasPlayerProgress(valueState)).toBe(true);
+		expect(hasPlayerProgress(notesState)).toBe(true);
+		expect(hasPlayerProgress(errorState)).toBe(true);
 	});
 });
