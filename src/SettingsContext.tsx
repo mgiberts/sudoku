@@ -12,6 +12,7 @@ import { symbolSets } from "./symbolSets";
 import type {
 	Difficulty,
 	Digit,
+	NumberColorScheme,
 	SettingsState,
 	SymbolSet,
 	ThemeSetting,
@@ -34,6 +35,7 @@ type SettingsContextValue = {
 	settings: SettingsState;
 	symbols: Record<Digit, string>;
 	updateDifficulty: (difficulty: Difficulty) => void;
+	updateNumberColorScheme: (numberColorScheme: NumberColorScheme) => void;
 	updateSymbolSet: (symbolSet: SymbolSet) => void;
 	updateTheme: (theme: ThemeSetting) => void;
 	digits: Digit[];
@@ -66,6 +68,10 @@ export const SettingsProvider = ({ children }: { children: ReactNode }) => {
 			setSettings((current) => ({ ...current, symbolSet }));
 		};
 
+		const updateNumberColorScheme = (numberColorScheme: NumberColorScheme) => {
+			setSettings((current) => ({ ...current, numberColorScheme }));
+		};
+
 		const updateTheme = (theme: ThemeSetting) => {
 			setSettings((current) => ({ ...current, theme }));
 		};
@@ -74,6 +80,7 @@ export const SettingsProvider = ({ children }: { children: ReactNode }) => {
 			settings,
 			symbols: symbolSets[settings.symbolSet],
 			updateDifficulty,
+			updateNumberColorScheme,
 			updateSymbolSet,
 			updateTheme,
 			digits: DIGITS,

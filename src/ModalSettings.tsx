@@ -1,7 +1,7 @@
 import { Moon, Sun, SunMoon, X } from "lucide-react";
 import { useSettings } from "./SettingsContext";
 import { symbolSetLabels, symbolSetOptions } from "./symbolSets";
-import type { Difficulty, ThemeSetting } from "./types";
+import type { Difficulty, NumberColorScheme, ThemeSetting } from "./types";
 
 const difficultyLabels: Record<Difficulty, string> = {
 	easy: "Easy",
@@ -17,6 +17,14 @@ const themeLabels: Record<ThemeSetting, string> = {
 };
 const themeOptions = Object.keys(themeLabels) as ThemeSetting[];
 
+const numberColorSchemeLabels: Record<NumberColorScheme, string> = {
+	color: "Color",
+	monochrome: "Monochrome",
+};
+const numberColorSchemeOptions = Object.keys(
+	numberColorSchemeLabels,
+) as NumberColorScheme[];
+
 export const ModalSettings = ({
 	open,
 	onClose,
@@ -24,8 +32,13 @@ export const ModalSettings = ({
 	open: boolean;
 	onClose: () => void;
 }) => {
-	const { settings, updateDifficulty, updateSymbolSet, updateTheme } =
-		useSettings();
+	const {
+		settings,
+		updateDifficulty,
+		updateNumberColorScheme,
+		updateSymbolSet,
+		updateTheme,
+	} = useSettings();
 
 	return open ? (
 		<div className="settings-layer">
@@ -86,6 +99,19 @@ export const ModalSettings = ({
 							type="button"
 						>
 							{symbolSetLabels[option]}
+						</button>
+					))}
+				</fieldset>
+				<fieldset className="segmented settings-control">
+					<legend>Board numbers</legend>
+					{numberColorSchemeOptions.map((option) => (
+						<button
+							className={option === settings.numberColorScheme ? "active" : ""}
+							key={option}
+							onClick={() => updateNumberColorScheme(option)}
+							type="button"
+						>
+							{numberColorSchemeLabels[option]}
 						</button>
 					))}
 				</fieldset>

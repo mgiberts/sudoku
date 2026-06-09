@@ -4,9 +4,11 @@ export type Board = CellValue[];
 export type Difficulty = "easy" | "medium" | "hard";
 export type ThemeSetting = "light" | "dark" | "auto";
 export type SymbolSet = "digits" | "kanji" | "emoji";
+export type NumberColorScheme = "color" | "monochrome";
 
 export type SettingsState = {
 	difficulty: Difficulty;
+	numberColorScheme: NumberColorScheme;
 	symbolSet: SymbolSet;
 	theme: ThemeSetting;
 };

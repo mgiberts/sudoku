@@ -5,7 +5,7 @@ import { useGame } from "./SudokuContext";
 export const Board = () => {
 	const { state, dispatch } = useGame();
 	const {
-		settings: { symbolSet },
+		settings: { numberColorScheme, symbolSet },
 		symbols,
 		digits,
 		numberClasses,
@@ -15,7 +15,7 @@ export const Board = () => {
 
 	return (
 		<>
-			<div className={`board symbol-${symbolSet}`}>
+			<div className={`board symbol-${symbolSet} numbers-${numberColorScheme}`}>
 				{state.cells.map((cell, index) => {
 					const row = Math.floor(index / 9);
 					const col = index % 9;
@@ -93,7 +93,7 @@ export const Board = () => {
 				})}
 			</div>
 
-			<fieldset className="keypad">
+			<fieldset className={`keypad numbers-${numberColorScheme}`}>
 				<legend>Number entry</legend>
 				{digits.map((digit) => {
 					const disabled = isDigitComplete(state.cells, digit);

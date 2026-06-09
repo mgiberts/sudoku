@@ -576,6 +576,18 @@ legend {
 	box-shadow: none;
 }
 
+.board.numbers-monochrome .value {
+	color: var(--text-strong);
+}
+
+.board.numbers-monochrome .note {
+	color: var(--text-muted);
+}
+
+.keypad.numbers-monochrome .key:not(:disabled) {
+	color: var(--text-strong);
+}
+
 .n1 {
 	color: var(--num-1);
 }

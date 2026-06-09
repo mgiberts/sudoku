@@ -1,6 +1,7 @@
 import type {
 	Difficulty,
 	GameState,
+	NumberColorScheme,
 	SettingsState,
 	SymbolSet,
 	ThemeSetting,
@@ -12,10 +13,15 @@ const SETTINGS_STORAGE_KEY = "sudoku.settings.v1";
 const DEFAULT_DIFFICULTY: Difficulty = "easy";
 const DEFAULT_SETTINGS: SettingsState = {
 	difficulty: DEFAULT_DIFFICULTY,
+	numberColorScheme: "color",
 	symbolSet: "digits",
 	theme: "auto",
 };
 const DIFFICULTIES = new Set<Difficulty>(["easy", "medium", "hard"]);
+const NUMBER_COLOR_SCHEMES = new Set<NumberColorScheme>([
+	"color",
+	"monochrome",
+]);
 const SYMBOL_SETS = new Set<SymbolSet>(["digits", "kanji", "emoji"]);
 const THEMES = new Set<ThemeSetting>(["light", "dark", "auto"]);
 
@@ -70,6 +76,9 @@ const createSudokuStorage = () => {
 			return {
 				difficulty:
 					normalizeDifficulty(parsed.difficulty) ?? DEFAULT_SETTINGS.difficulty,
+				numberColorScheme:
+					normalizeNumberColorScheme(parsed.numberColorScheme) ??
+					DEFAULT_SETTINGS.numberColorScheme,
 				symbolSet:
 					normalizeSymbolSet(parsed.symbolSet) ?? DEFAULT_SETTINGS.symbolSet,
 				theme: normalizeTheme(parsed.theme) ?? DEFAULT_SETTINGS.theme,
@@ -118,6 +127,14 @@ const normalizeDifficulty = (difficulty?: string): Difficulty | null => {
 const normalizeSymbolSet = (symbolSet?: string): SymbolSet | null => {
 	return SYMBOL_SETS.has(symbolSet as SymbolSet)
 		? (symbolSet as SymbolSet)
+		: null;
+};
+
+const normalizeNumberColorScheme = (
+	numberColorScheme?: string,
+): NumberColorScheme | null => {
+	return NUMBER_COLOR_SCHEMES.has(numberColorScheme as NumberColorScheme)
+		? (numberColorScheme as NumberColorScheme)
 		: null;
 };
 
