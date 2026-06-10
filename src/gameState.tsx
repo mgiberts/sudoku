@@ -14,6 +14,8 @@ export type GameAction =
 	| { type: "enter"; digit: Digit }
 	| { type: "erase" }
 	| { type: "undo" }
+	| { type: "pause" }
+	| { type: "resume" }
 	| { type: "new-game"; difficulty: Difficulty };
 
 export const gameReducer = (
@@ -22,23 +24,48 @@ export const gameReducer = (
 ): GameState => {
 	switch (action.type) {
 		case "select":
+			if (state.pausedAt !== null) {
+				return state;
+			}
 			return { ...state, selectedIndex: action.index };
 		case "select-and-enter":
+			if (state.pausedAt !== null) {
+				return state;
+			}
 			return selectAndEnter(state, action.index);
 		case "select-digit":
+			if (state.pausedAt !== null) {
+				return state;
+			}
 			return {
 				...state,
 				selectedDigit:
 					state.selectedDigit === action.digit ? null : action.digit,
 			};
 		case "toggle-pencil":
+			if (state.pausedAt !== null) {
+				return state;
+			}
 			return { ...state, pencilMode: !state.pencilMode };
 		case "enter":
+			if (state.pausedAt !== null) {
+				return state;
+			}
 			return enterDigit(state, action.digit);
 		case "erase":
+			if (state.pausedAt !== null) {
+				return state;
+			}
 			return eraseCell(state);
 		case "undo":
+			if (state.pausedAt !== null) {
+				return state;
+			}
 			return undoLastEntry(state);
+		case "pause":
+			return pauseGame(state);
+		case "resume":
+			return resumeGame(state);
 		case "new-game":
 			return createInitialGame(action.difficulty);
 		default:
@@ -64,6 +91,7 @@ export const createInitialGame = (difficulty: Difficulty): GameState => {
 		errors: 0,
 		startedAt: Date.now(),
 		elapsedBeforePause: 0,
+		pausedAt: null,
 		completedAt: null,
 		undoHistory: [],
 		seed,
@@ -83,6 +111,45 @@ export const hasPlayerProgress = (state: GameState): boolean => {
 			(cell) => !cell.given && (cell.value !== null || cell.notes.length > 0),
 		)
 	);
+};
+
+export const getElapsedSeconds = (
+	state: GameState,
+	end = Date.now(),
+): number => {
+	const activeEnd = state.completedAt ?? state.pausedAt ?? end;
+	const elapsedMilliseconds =
+		state.elapsedBeforePause + Math.max(0, activeEnd - state.startedAt);
+
+	return Math.max(0, Math.floor(elapsedMilliseconds / 1000));
+};
+
+const pauseGame = (state: GameState): GameState => {
+	if (state.completedAt !== null || state.pausedAt !== null) {
+		return state;
+	}
+
+	const pausedAt = Date.now();
+
+	return {
+		...state,
+		elapsedBeforePause:
+			state.elapsedBeforePause + Math.max(0, pausedAt - state.startedAt),
+		startedAt: pausedAt,
+		pausedAt,
+	};
+};
+
+const resumeGame = (state: GameState): GameState => {
+	if (state.completedAt !== null || state.pausedAt === null) {
+		return state;
+	}
+
+	return {
+		...state,
+		startedAt: Date.now(),
+		pausedAt: null,
+	};
 };
 
 const selectAndEnter = (state: GameState, index: number): GameState => {

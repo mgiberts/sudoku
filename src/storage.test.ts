@@ -78,7 +78,10 @@ describe("sudoku storage", () => {
 			}),
 		);
 
-		expect(sudokuStorage.loadGame()?.undoHistory).toEqual([]);
+		expect(sudokuStorage.loadGame()).toMatchObject({
+			pausedAt: null,
+			undoHistory: [],
+		});
 	});
 
 	it("records better qualifying best times by difficulty", () => {

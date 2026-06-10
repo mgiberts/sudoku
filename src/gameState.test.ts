@@ -1,5 +1,10 @@
-import { describe, expect, it } from "vitest";
-import { gameReducer, hasPlayerProgress, isDigitComplete } from "./gameState";
+import { afterEach, describe, expect, it, vi } from "vitest";
+import {
+	gameReducer,
+	getElapsedSeconds,
+	hasPlayerProgress,
+	isDigitComplete,
+} from "./gameState";
 import type { Digit, GameState } from "./types";
 
 const createTestState = (overrides: Partial<GameState> = {}): GameState => {
@@ -24,6 +29,7 @@ const createTestState = (overrides: Partial<GameState> = {}): GameState => {
 		errors: 0,
 		startedAt: Date.now() - 5000,
 		elapsedBeforePause: 0,
+		pausedAt: null,
 		completedAt: null,
 		undoHistory: [],
 		seed: 101,
@@ -32,6 +38,10 @@ const createTestState = (overrides: Partial<GameState> = {}): GameState => {
 };
 
 describe("game state", () => {
+	afterEach(() => {
+		vi.restoreAllMocks();
+	});
+
 	it("increments errors and marks visible conflicts invalid", () => {
 		const state = createTestState();
 		const next = gameReducer(state, { type: "enter", digit: 2 });
@@ -213,6 +223,36 @@ describe("game state", () => {
 		expect(gameReducer(state, { type: "undo" })).toBe(state);
 	});
 
+	it("pauses elapsed time until resume", () => {
+		vi.spyOn(Date, "now").mockReturnValue(10_000);
+		const state = createTestState({
+			startedAt: 4_000,
+			elapsedBeforePause: 2_000,
+		});
+		const paused = gameReducer(state, { type: "pause" });
+
+		expect(paused.elapsedBeforePause).toBe(8_000);
+		expect(paused.startedAt).toBe(10_000);
+		expect(paused.pausedAt).toBe(10_000);
+		expect(getElapsedSeconds(paused, 30_000)).toBe(8);
+
+		vi.mocked(Date.now).mockReturnValue(30_000);
+		const resumed = gameReducer(paused, { type: "resume" });
+
+		expect(resumed.elapsedBeforePause).toBe(8_000);
+		expect(resumed.startedAt).toBe(30_000);
+		expect(resumed.pausedAt).toBeNull();
+		expect(getElapsedSeconds(resumed, 35_000)).toBe(13);
+	});
+
+	it("ignores game input while paused", () => {
+		const state = createTestState({ pausedAt: Date.now() });
+
+		expect(gameReducer(state, { type: "enter", digit: 1 })).toBe(state);
+		expect(gameReducer(state, { type: "select", index: 1 })).toBe(state);
+		expect(gameReducer(state, { type: "erase" })).toBe(state);
+	});
+
 	it("can erase a user-entered valid value", () => {
 		const state = createTestState({
 			cells: createTestState().cells.map((cell, index) =>
@@ -245,6 +285,7 @@ describe("game state", () => {
 		expect(next.errors).toBe(0);
 		expect(next.completedAt).toBeNull();
 		expect(next.selectedDigit).toBeNull();
+		expect(next.pausedAt).toBeNull();
 		expect(next.undoHistory).toEqual([]);
 	});
 

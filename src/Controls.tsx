@@ -4,7 +4,7 @@ import {
 	LocateFixed,
 	Pause,
 	PenLine,
-	// Play,
+	Play,
 	RotateCcw,
 	Undo,
 } from "lucide-react";
@@ -16,8 +16,7 @@ const pencilIcon = <PenLine size={19} />;
 const eraserIcon = <Eraser size={19} />;
 const resetIcon = <RotateCcw size={19} />;
 const undoIcon = <Undo size={19} />;
-// TODO: Implement Play/Pause functionality
-// const playIcon = <Play size={19} />;
+const playIcon = <Play size={19} />;
 const pauseIcon = <Pause size={19} />;
 const locateIcon = <Locate size={19} />;
 const locateFixedIcon = <LocateFixed size={19} />;
@@ -75,8 +74,16 @@ export const Controls = ({ onReset }: { onReset: () => void }) => {
 			>
 				{resetIcon}
 			</button>
-			<button className="icon-button" title="Resume" type="button">
-				{pauseIcon}
+			<button
+				className={`icon-button ${state.pausedAt !== null ? "active" : ""}`}
+				disabled={state.completedAt !== null}
+				onClick={() =>
+					dispatch({ type: state.pausedAt === null ? "pause" : "resume" })
+				}
+				title={state.pausedAt === null ? "Pause" : "Resume"}
+				type="button"
+			>
+				{state.pausedAt === null ? pauseIcon : playIcon}
 			</button>
 		</div>
 	);

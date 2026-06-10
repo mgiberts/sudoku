@@ -1,11 +1,11 @@
-import { Play, RotateCcw, Sparkles } from "lucide-react";
+import { Pause, Play, RotateCcw, Sparkles } from "lucide-react";
 import { useEffect, useState } from "react";
 import { BestTimesPanel } from "./BestTimesPanel";
 import { Board } from "./Board";
 import { Controls } from "./Controls";
 import { formatDuration } from "./formatDuration";
 import { GameDialog } from "./GameDialog";
-import { hasPlayerProgress } from "./gameState";
+import { getElapsedSeconds, hasPlayerProgress } from "./gameState";
 import { Header } from "./Header";
 import { Keypad } from "./Keypad";
 import { SettingsProvider, useSettings } from "./SettingsContext";
@@ -36,23 +36,27 @@ const SudokuApp = () => {
 	const [pendingDifficulty, setPendingDifficulty] = useState<Difficulty | null>(
 		null,
 	);
+	const { completedAt, difficulty, elapsedBeforePause, errors, startedAt } =
+		state;
 
 	useEffect(() => {
-		if (!state.completedAt) {
+		if (!completedAt) {
 			return;
 		}
 
 		const elapsedSeconds = Math.max(
 			0,
-			Math.floor((state.completedAt - state.startedAt) / 1000),
+			Math.floor(
+				(elapsedBeforePause + Math.max(0, completedAt - startedAt)) / 1000,
+			),
 		);
 		setBestTimes(
-			sudokuStorage.recordBestTime(state.difficulty, {
+			sudokuStorage.recordBestTime(difficulty, {
 				seconds: elapsedSeconds,
-				errors: state.errors,
+				errors,
 			}),
 		);
-	}, [state.completedAt, state.difficulty, state.errors, state.startedAt]);
+	}, [completedAt, difficulty, elapsedBeforePause, errors, startedAt]);
 
 	const startNewDifficulty = (difficulty: Difficulty) => {
 		updateDifficulty(difficulty);
@@ -103,6 +107,7 @@ const SudokuApp = () => {
 				open={bestTimesOpen}
 			/>
 
+			<PauseDialog />
 			<CompletionDialog open={!!state.completedAt} errors={state.errors} />
 			<ResetConfirmationDialog
 				open={resetConfirmOpen}
@@ -138,7 +143,7 @@ const CompletionDialog = ({
 }) => {
 	const { state, dispatch } = useGame();
 	const elapsedSeconds = state.completedAt
-		? Math.max(0, Math.floor((state.completedAt - state.startedAt) / 1000))
+		? getElapsedSeconds(state, state.completedAt)
 		: 0;
 	const isOverBestTimeLimit =
 		errors >= BEST_TIME_ERROR_LIMITS[state.difficulty];
@@ -171,6 +176,30 @@ const CompletionDialog = ({
 				</>
 			}
 			title="Complete"
+		/>
+	);
+};
+
+const PauseDialog = () => {
+	const { dispatch, state } = useGame();
+
+	return (
+		<GameDialog
+			open={state.pausedAt !== null}
+			actions={
+				<button
+					className="primary-action"
+					onClick={() => dispatch({ type: "resume" })}
+					type="button"
+				>
+					<Play size={18} />
+					Resume
+				</button>
+			}
+			icon={<Pause size={32} />}
+			label="Game paused"
+			message="Game is paused. Resume when you are ready."
+			title="Paused"
 		/>
 	);
 };

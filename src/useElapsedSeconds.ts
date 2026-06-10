@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { getElapsedSeconds } from "./gameState";
 import { useGame } from "./SudokuContext";
 
 export const useElapsedSeconds = () => {
@@ -6,16 +7,15 @@ export const useElapsedSeconds = () => {
 	const [now, setNow] = useState(Date.now());
 
 	useEffect(() => {
-		if (state.completedAt) {
+		if (state.completedAt || state.pausedAt) {
 			return;
 		}
 
 		const interval = window.setInterval(() => setNow(Date.now()), 1000);
 		return () => window.clearInterval(interval);
-	}, [state.completedAt]);
+	}, [state.completedAt, state.pausedAt]);
 
 	return useMemo(() => {
-		const end = state.completedAt ?? now;
-		return Math.max(0, Math.floor((end - state.startedAt) / 1000));
-	}, [now, state.completedAt, state.startedAt]);
+		return getElapsedSeconds(state, now);
+	}, [now, state]);
 };

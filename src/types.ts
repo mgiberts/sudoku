@@ -39,6 +39,7 @@ export type GameState = {
 	errors: number;
 	startedAt: number;
 	elapsedBeforePause: number;
+	pausedAt: number | null;
 	completedAt: number | null;
 	undoHistory: number[];
 	seed: number;
