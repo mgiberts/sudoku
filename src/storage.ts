@@ -2,6 +2,7 @@ import type {
 	BestTime,
 	BestTimes,
 	Difficulty,
+	EmptyCellDisplay,
 	GameState,
 	InputStyle,
 	NumberColorScheme,
@@ -17,6 +18,7 @@ const STATS_STORAGE_KEY = "sudoku.stats.v1";
 const DEFAULT_DIFFICULTY: Difficulty = "easy";
 const DEFAULT_SETTINGS: SettingsState = {
 	difficulty: DEFAULT_DIFFICULTY,
+	emptyCellDisplay: "clean",
 	inputStyle: "single",
 	numberColorScheme: "color",
 	symbolSet: "digits",
@@ -29,6 +31,7 @@ const DIFFICULTIES = new Set<Difficulty>([
 	"master",
 	"expert",
 ]);
+const EMPTY_CELL_DISPLAYS = new Set<EmptyCellDisplay>(["clean", "dots"]);
 const INPUT_STYLES = new Set<InputStyle>(["single", "flow"]);
 const NUMBER_COLOR_SCHEMES = new Set<NumberColorScheme>([
 	"color",
@@ -101,6 +104,9 @@ const createSudokuStorage = () => {
 			return {
 				difficulty:
 					normalizeDifficulty(parsed.difficulty) ?? DEFAULT_SETTINGS.difficulty,
+				emptyCellDisplay:
+					normalizeEmptyCellDisplay(parsed.emptyCellDisplay) ??
+					DEFAULT_SETTINGS.emptyCellDisplay,
 				inputStyle:
 					normalizeInputStyle(parsed.inputStyle) ?? DEFAULT_SETTINGS.inputStyle,
 				numberColorScheme:
@@ -218,6 +224,14 @@ const normalizeDifficulty = (difficulty?: string): Difficulty | null => {
 const normalizeInputStyle = (inputStyle?: string): InputStyle | null => {
 	return INPUT_STYLES.has(inputStyle as InputStyle)
 		? (inputStyle as InputStyle)
+		: null;
+};
+
+const normalizeEmptyCellDisplay = (
+	emptyCellDisplay?: string,
+): EmptyCellDisplay | null => {
+	return EMPTY_CELL_DISPLAYS.has(emptyCellDisplay as EmptyCellDisplay)
+		? (emptyCellDisplay as EmptyCellDisplay)
 		: null;
 };
 

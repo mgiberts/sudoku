@@ -11,11 +11,16 @@ describe("sudoku storage", () => {
 		expect(sudokuStorage.loadSettings().numberColorScheme).toBe("color");
 	});
 
+	it("defaults empty cells to clean display", () => {
+		expect(sudokuStorage.loadSettings().emptyCellDisplay).toBe("clean");
+	});
+
 	it("loads a saved monochrome board number color scheme", () => {
 		localStorage.setItem(
 			"sudoku.settings.v1",
 			JSON.stringify({
 				difficulty: "master",
+				emptyCellDisplay: "dots",
 				inputStyle: "flow",
 				numberColorScheme: "monochrome",
 				symbolSet: "kanji",
@@ -25,6 +30,7 @@ describe("sudoku storage", () => {
 
 		expect(sudokuStorage.loadSettings()).toMatchObject({
 			difficulty: "master",
+			emptyCellDisplay: "dots",
 			inputStyle: "flow",
 			numberColorScheme: "monochrome",
 			symbolSet: "kanji",
@@ -48,6 +54,15 @@ describe("sudoku storage", () => {
 		);
 
 		expect(sudokuStorage.loadSettings().inputStyle).toBe("single");
+	});
+
+	it("falls back to clean display for invalid empty cell display settings", () => {
+		localStorage.setItem(
+			"sudoku.settings.v1",
+			JSON.stringify({ emptyCellDisplay: "sparkles" }),
+		);
+
+		expect(sudokuStorage.loadSettings().emptyCellDisplay).toBe("clean");
 	});
 
 	it("normalizes missing undo history on saved games", () => {

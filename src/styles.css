@@ -31,6 +31,7 @@
 	--cell-selected: #d9f0eb;
 	--cell-matching: #fff7d6;
 	--cell-invalid: #fee4e2;
+	--cell-invalid-selected: #8a051b;
 	--shadow-board: rgba(15, 23, 42, 0.16);
 	--shadow-dialog: rgba(15, 23, 42, 0.28);
 	--backdrop: rgba(15, 23, 42, 0.42);
@@ -81,6 +82,7 @@
 	--cell-selected: #1d4f4c;
 	--cell-matching: #403720;
 	--cell-invalid: #4a252b;
+	--cell-invalid-selected: #8a051b;
 	--shadow-board: rgba(0, 0, 0, 0.38);
 	--shadow-dialog: rgba(0, 0, 0, 0.46);
 	--backdrop: rgba(3, 7, 12, 0.62);
@@ -125,6 +127,7 @@
 		--cell-selected: #1d4f4c;
 		--cell-matching: #403720;
 		--cell-invalid: #4a252b;
+		--cell-invalid-selected: #8a051b;
 		--shadow-board: rgba(0, 0, 0, 0.38);
 		--shadow-dialog: rgba(0, 0, 0, 0.46);
 		--backdrop: rgba(3, 7, 12, 0.62);
@@ -507,6 +510,20 @@ legend {
 	background: var(--cell-same-unit);
 }
 
+.board.empty-display-dots .cell {
+	border-bottom-color: transparent;
+	border-right-color: transparent;
+}
+
+.board.empty-display-dots .cell:nth-child(3n) {
+	border-right: 3px solid var(--grid-line);
+}
+
+.board.empty-display-dots .cell:nth-child(n + 19):nth-child(-n + 27),
+.cell:nth-child(n + 46):nth-child(-n + 54) {
+	border-bottom: 3px solid var(--grid-line);
+}
+
 .cell.selected {
 	box-shadow: inset 0 0 0 4px var(--accent-strong);
 	z-index: 2;
@@ -535,6 +552,22 @@ legend {
 
 .cell.invalid {
 	background: var(--cell-invalid);
+}
+
+.cell.invalid.selected {
+	box-shadow: inset 0 0 0 4px var(--cell-invalid-selected);
+}
+
+.board.empty-display-dots .cell.empty::before {
+	content: "";
+	width: 4px;
+	height: 4px;
+	border-radius: 999px;
+	background: var(--accent);
+	top: calc(50% - 2px);
+	left: calc(50% - 2px);
+	position: absolute;
+	opacity: 0.72;
 }
 
 .value {

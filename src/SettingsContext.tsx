@@ -11,6 +11,7 @@ import { symbolSets } from "./symbolSets";
 import type {
 	Difficulty,
 	Digit,
+	EmptyCellDisplay,
 	InputStyle,
 	NumberColorScheme,
 	SettingsState,
@@ -35,6 +36,7 @@ type SettingsContextValue = {
 	settings: SettingsState;
 	symbols: Record<Digit, string>;
 	updateDifficulty: (difficulty: Difficulty) => void;
+	updateEmptyCellDisplay: (emptyCellDisplay: EmptyCellDisplay) => void;
 	updateInputStyle: (inputStyle: InputStyle) => void;
 	updateNumberColorScheme: (numberColorScheme: NumberColorScheme) => void;
 	updateSymbolSet: (symbolSet: SymbolSet) => void;
@@ -63,6 +65,10 @@ export const SettingsProvider = ({ children }: { children: ReactNode }) => {
 			setSettings((current) => ({ ...current, difficulty }));
 		};
 
+		const updateEmptyCellDisplay = (emptyCellDisplay: EmptyCellDisplay) => {
+			setSettings((current) => ({ ...current, emptyCellDisplay }));
+		};
+
 		const updateInputStyle = (inputStyle: InputStyle) => {
 			setSettings((current) => ({ ...current, inputStyle }));
 		};
@@ -83,6 +89,7 @@ export const SettingsProvider = ({ children }: { children: ReactNode }) => {
 			settings,
 			symbols: symbolSets[settings.symbolSet],
 			updateDifficulty,
+			updateEmptyCellDisplay,
 			updateInputStyle,
 			updateNumberColorScheme,
 			updateSymbolSet,

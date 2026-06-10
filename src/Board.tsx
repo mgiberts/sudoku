@@ -4,7 +4,7 @@ import { useGame } from "./SudokuContext";
 export const Board = () => {
 	const { state, dispatch } = useGame();
 	const {
-		settings: { inputStyle, numberColorScheme, symbolSet },
+		settings: { emptyCellDisplay, inputStyle, numberColorScheme, symbolSet },
 		symbols,
 		digits,
 		numberClasses,
@@ -16,7 +16,7 @@ export const Board = () => {
 
 	return (
 		<div
-			className={`grid9 board symbol-${symbolSet} numbers-${numberColorScheme}`}
+			className={`grid9 board symbol-${symbolSet} numbers-${numberColorScheme} empty-display-${emptyCellDisplay}`}
 		>
 			{state.cells.map((cell, index) => {
 				const row = Math.floor(index / 9);
@@ -55,6 +55,7 @@ export const Board = () => {
 						className={[
 							"cell",
 							cell.given ? "given" : "user-cell",
+							cell.value === null && cell.notes.length === 0 ? "empty" : "",
 							cell.invalid ? "invalid" : "",
 							state.selectedIndex === index ? "selected" : "",
 							sameUnit ? "same-unit" : "",

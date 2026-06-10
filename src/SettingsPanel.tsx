@@ -1,9 +1,19 @@
-import { Locate, LocateFixed, Moon, Sun, SunMoon } from "lucide-react";
+import {
+	CircleDot,
+	CircleOff,
+	Grid3X3,
+	Locate,
+	LocateFixed,
+	Moon,
+	Sun,
+	SunMoon,
+} from "lucide-react";
 import { ModalPanel } from "./ModalPanel";
 import { useSettings } from "./SettingsContext";
 import { symbolSetLabels, symbolSetOptions } from "./symbolSets";
 import type {
 	Difficulty,
+	EmptyCellDisplay,
 	InputStyle,
 	NumberColorScheme,
 	ThemeSetting,
@@ -23,6 +33,14 @@ const inputStyleLabels: Record<InputStyle, string> = {
 	flow: "Flow",
 };
 const inputStyleOptions = Object.keys(inputStyleLabels) as InputStyle[];
+
+const emptyCellDisplayLabels: Record<EmptyCellDisplay, string> = {
+	clean: "Lines",
+	dots: "Dots",
+};
+const emptyCellDisplayOptions = Object.keys(
+	emptyCellDisplayLabels,
+) as EmptyCellDisplay[];
 
 const themeLabels: Record<ThemeSetting, string> = {
 	light: "Light",
@@ -50,6 +68,7 @@ export const SettingsPanel = ({
 }) => {
 	const {
 		settings,
+		updateEmptyCellDisplay,
 		updateInputStyle,
 		updateNumberColorScheme,
 		updateSymbolSet,
@@ -125,6 +144,21 @@ export const SettingsPanel = ({
 						type="button"
 					>
 						{numberColorSchemeLabels[option]}
+					</button>
+				))}
+			</fieldset>
+			<fieldset className="segmented settings-control">
+				<legend>Empty cells</legend>
+				{emptyCellDisplayOptions.map((option) => (
+					<button
+						className={option === settings.emptyCellDisplay ? "active" : ""}
+						key={option}
+						onClick={() => updateEmptyCellDisplay(option)}
+						type="button"
+					>
+						{option === "clean" && <Grid3X3 size={14} />}
+						{option === "dots" && <CircleDot size={14} />}
+						{emptyCellDisplayLabels[option]}
 					</button>
 				))}
 			</fieldset>
