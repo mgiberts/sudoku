@@ -1,20 +1,16 @@
-import { Eraser, PenLine, RotateCcw, Settings, Star } from "lucide-react";
+import { Settings, Star } from "lucide-react";
 import { ElapsedTime } from "./ElapsedTime";
-import { difficultyLabels } from "./ModalSettings";
 import { useSettings } from "./SettingsContext";
+import { difficultyLabels } from "./SettingsPanel";
 import { Stat } from "./Stat";
 import { useGame } from "./SudokuContext";
 
 const settingsIcon = <Settings size={19} />;
 const bestTimesIcon = <Star size={19} />;
-const pencilIcon = <PenLine size={19} />;
-const eraserIcon = <Eraser size={19} />;
-const resetIcon = <RotateCcw size={19} />;
 
 export const Header = ({
 	bestTimesOpen,
 	onBestTimesToggle,
-	onReset,
 	onSettingsToggle,
 	settingsOpen,
 }: {
@@ -24,7 +20,7 @@ export const Header = ({
 	onSettingsToggle: () => void;
 	settingsOpen: boolean;
 }) => {
-	const { state, dispatch } = useGame();
+	const { state } = useGame();
 	const {
 		settings: { symbolSet },
 	} = useSettings();
@@ -32,7 +28,7 @@ export const Header = ({
 
 	return (
 		<>
-			<header className="top-bar">
+			<header className="grid9 top-bar">
 				<div className="title-group">
 					<p className="eyebrow">{difficultyLabels[state.difficulty]}</p>
 					<h1>{gameName}</h1>
@@ -61,37 +57,9 @@ export const Header = ({
 				</div>
 			</header>
 
-			<div className="sub-bar stats">
+			<div className="grid">
 				<ElapsedTime />
 				<Stat label="Errors" value={String(state.errors)} />
-			</div>
-
-			<div className="controls-row">
-				<button
-					aria-pressed={state.pencilMode}
-					className={`icon-button ${state.pencilMode ? "active" : ""}`}
-					onClick={() => dispatch({ type: "toggle-pencil" })}
-					title="Pencil mode"
-					type="button"
-				>
-					{pencilIcon}
-				</button>
-				<button
-					className="icon-button"
-					onClick={() => dispatch({ type: "erase" })}
-					title="Erase"
-					type="button"
-				>
-					{eraserIcon}
-				</button>
-				<button
-					className="icon-button"
-					onClick={onReset}
-					title="Reset"
-					type="button"
-				>
-					{resetIcon}
-				</button>
 			</div>
 		</>
 	);

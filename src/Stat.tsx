@@ -7,7 +7,7 @@ export const Stat = ({
 }) => {
 	return (
 		<div className="stat">
-			<span>{label}</span>
+			<span className="eyebrow">{label}</span>
 			<strong>{value}</strong>
 		</div>
 	);

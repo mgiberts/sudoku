@@ -1,12 +1,15 @@
 import { Play, RotateCcw, Sparkles } from "lucide-react";
-import { type ReactNode, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { BestTimesPanel } from "./BestTimesPanel";
 import { Board } from "./Board";
+import { Controls } from "./Controls";
 import { formatDuration } from "./formatDuration";
+import { GameDialog } from "./GameDialog";
 import { hasPlayerProgress } from "./gameState";
 import { Header } from "./Header";
-import { difficultyLabels, ModalSettings } from "./ModalSettings";
+import { Keypad } from "./Keypad";
 import { SettingsProvider, useSettings } from "./SettingsContext";
+import { difficultyLabels, SettingsPanel } from "./SettingsPanel";
 import { SudokuProvider, useGame } from "./SudokuContext";
 import { BEST_TIME_ERROR_LIMITS, sudokuStorage } from "./storage";
 import type { BestTimes, Difficulty } from "./types";
@@ -79,11 +82,13 @@ const SudokuApp = () => {
 					onSettingsToggle={() => setSettingsOpen((open) => !open)}
 					settingsOpen={settingsOpen}
 				/>
+				<Controls onReset={() => setResetConfirmOpen(true)} />
 
 				<Board />
+				<Keypad />
 			</section>
 
-			<ModalSettings
+			<SettingsPanel
 				onDifficultyChange={requestDifficultyChange}
 				open={settingsOpen}
 				onClose={() => setSettingsOpen(false)}
@@ -98,25 +103,25 @@ const SudokuApp = () => {
 				open={bestTimesOpen}
 			/>
 
-			{state.completedAt ? <CompletionDialog errors={state.errors} /> : null}
-
-			{resetConfirmOpen ? (
-				<ResetConfirmationDialog
-					onCancel={() => setResetConfirmOpen(false)}
-					onConfirm={() => {
-						dispatch({ type: "new-game", difficulty: state.difficulty });
-						setResetConfirmOpen(false);
-					}}
-				/>
-			) : null}
+			<CompletionDialog open={!!state.completedAt} errors={state.errors} />
+			<ResetConfirmationDialog
+				open={resetConfirmOpen}
+				onCancel={() => setResetConfirmOpen(false)}
+				onConfirm={() => {
+					dispatch({ type: "new-game", difficulty: state.difficulty });
+					setResetConfirmOpen(false);
+				}}
+			/>
 
 			{pendingDifficulty ? (
 				<DifficultyChangeDialog
+					open={!!pendingDifficulty}
 					difficulty={pendingDifficulty}
 					onCancel={() => setPendingDifficulty(null)}
 					onConfirm={() => {
 						startNewDifficulty(pendingDifficulty);
 						setPendingDifficulty(null);
+						setSettingsOpen(false);
 					}}
 				/>
 			) : null}
@@ -124,7 +129,13 @@ const SudokuApp = () => {
 	);
 };
 
-const CompletionDialog = ({ errors }: { errors: number }) => {
+const CompletionDialog = ({
+	errors,
+	open,
+}: {
+	errors: number;
+	open?: boolean;
+}) => {
 	const { state, dispatch } = useGame();
 	const elapsedSeconds = state.completedAt
 		? Math.max(0, Math.floor((state.completedAt - state.startedAt) / 1000))
@@ -134,6 +145,7 @@ const CompletionDialog = ({ errors }: { errors: number }) => {
 
 	return (
 		<GameDialog
+			open={open}
 			actions={
 				<button
 					className="primary-action"
@@ -166,12 +178,15 @@ const CompletionDialog = ({ errors }: { errors: number }) => {
 const ResetConfirmationDialog = ({
 	onCancel,
 	onConfirm,
+	open,
 }: {
 	onCancel: () => void;
 	onConfirm: () => void;
+	open?: boolean;
 }) => {
 	return (
 		<GameDialog
+			open={open}
 			actions={
 				<>
 					<button className="secondary-action" onClick={onCancel} type="button">
@@ -195,13 +210,16 @@ const DifficultyChangeDialog = ({
 	difficulty,
 	onCancel,
 	onConfirm,
+	open,
 }: {
 	difficulty: Difficulty;
 	onCancel: () => void;
 	onConfirm: () => void;
+	open?: boolean;
 }) => {
 	return (
 		<GameDialog
+			open={open}
 			actions={
 				<>
 					<button className="secondary-action" onClick={onCancel} type="button">
@@ -218,35 +236,5 @@ const DifficultyChangeDialog = ({
 			message={`This discards the current puzzle and starts a ${difficultyLabels[difficulty]} puzzle.`}
 			title="Change difficulty?"
 		/>
-	);
-};
-
-const GameDialog = ({
-	actions,
-	icon,
-	label,
-	message,
-	title,
-}: {
-	actions: ReactNode;
-	icon: ReactNode;
-	label: string;
-	message: ReactNode;
-	title: string;
-}) => {
-	return (
-		<div className="dialog-backdrop" role="presentation">
-			<section
-				className="dialog"
-				role="dialog"
-				aria-modal="true"
-				aria-label={label}
-			>
-				{icon}
-				<h2>{title}</h2>
-				<p>{message}</p>
-				<div className="dialog-actions">{actions}</div>
-			</section>
-		</div>
 	);
 };

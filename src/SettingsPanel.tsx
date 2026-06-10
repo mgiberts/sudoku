@@ -1,4 +1,4 @@
-import { Keyboard, Moon, MousePointerClick, Sun, SunMoon } from "lucide-react";
+import { Locate, LocateFixed, Moon, Sun, SunMoon } from "lucide-react";
 import { ModalPanel } from "./ModalPanel";
 import { useSettings } from "./SettingsContext";
 import { symbolSetLabels, symbolSetOptions } from "./symbolSets";
@@ -39,7 +39,7 @@ const numberColorSchemeOptions = Object.keys(
 	numberColorSchemeLabels,
 ) as NumberColorScheme[];
 
-export const ModalSettings = ({
+export const SettingsPanel = ({
 	onDifficultyChange,
 	open,
 	onClose,
@@ -96,8 +96,8 @@ export const ModalSettings = ({
 						onClick={() => updateInputStyle(option)}
 						type="button"
 					>
-						{option === "single" && <Keyboard size={14} />}
-						{option === "flow" && <MousePointerClick size={14} />}
+						{option === "single" && <Locate size={14} />}
+						{option === "flow" && <LocateFixed size={14} />}
 						{inputStyleLabels[option]}
 					</button>
 				))}

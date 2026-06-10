@@ -1,7 +1,7 @@
 import { Trash2 } from "lucide-react";
 import { formatDuration } from "./formatDuration";
 import { ModalPanel } from "./ModalPanel";
-import { difficultyLabels, difficultyOptions } from "./ModalSettings";
+import { difficultyLabels, difficultyOptions } from "./SettingsPanel";
 import { BEST_TIME_ERROR_LIMITS } from "./storage";
 import type { BestTimes } from "./types";
 
