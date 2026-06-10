@@ -319,6 +319,13 @@ legend {
 	background: var(--surface-raised);
 }
 
+.icon-button:disabled {
+	color: var(--text-soft);
+	background: var(--surface-muted);
+	cursor: not-allowed;
+	opacity: 0.72;
+}
+
 .settings-button,
 .icon-button.compact {
 	flex: 0 0 44px;

@@ -13,6 +13,7 @@ export type GameAction =
 	| { type: "toggle-pencil" }
 	| { type: "enter"; digit: Digit }
 	| { type: "erase" }
+	| { type: "undo" }
 	| { type: "new-game"; difficulty: Difficulty };
 
 export const gameReducer = (
@@ -36,6 +37,8 @@ export const gameReducer = (
 			return enterDigit(state, action.digit);
 		case "erase":
 			return eraseCell(state);
+		case "undo":
+			return undoLastEntry(state);
 		case "new-game":
 			return createInitialGame(action.difficulty);
 		default:
@@ -62,6 +65,7 @@ export const createInitialGame = (difficulty: Difficulty): GameState => {
 		startedAt: Date.now(),
 		elapsedBeforePause: 0,
 		completedAt: null,
+		undoHistory: [],
 		seed,
 	};
 };
@@ -161,12 +165,32 @@ const enterDigit = (state: GameState, digit: Digit): GameState => {
 		...state,
 		cells,
 		errors: isInvalid ? state.errors + 1 : state.errors,
+		undoHistory: [...state.undoHistory, state.selectedIndex],
 	};
 
 	return finishIfSolved(nextState);
 };
 
 const eraseCell = (state: GameState): GameState => {
+	return clearSelectedCell(state);
+};
+
+const undoLastEntry = (state: GameState): GameState => {
+	if (state.completedAt !== null || state.undoHistory.length === 0) {
+		return state;
+	}
+
+	const undoHistory = state.undoHistory.slice(0, -1);
+	const selectedIndex = state.undoHistory[state.undoHistory.length - 1];
+
+	return clearSelectedCell({
+		...state,
+		selectedIndex,
+		undoHistory,
+	});
+};
+
+const clearSelectedCell = (state: GameState): GameState => {
 	if (state.completedAt !== null) {
 		return state;
 	}

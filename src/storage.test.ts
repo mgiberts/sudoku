@@ -1,5 +1,6 @@
 import { afterEach, describe, expect, it } from "vitest";
 import { sudokuStorage } from "./storage";
+import type { Digit } from "./types";
 
 describe("sudoku storage", () => {
 	afterEach(() => {
@@ -47,6 +48,37 @@ describe("sudoku storage", () => {
 		);
 
 		expect(sudokuStorage.loadSettings().inputStyle).toBe("single");
+	});
+
+	it("normalizes missing undo history on saved games", () => {
+		const solution = Array.from({ length: 81 }, (_, index) => {
+			const row = Math.floor(index / 9);
+			const col = index % 9;
+			return ((row * 3 + Math.floor(row / 3) + col) % 9) + 1;
+		}) as Digit[];
+
+		localStorage.setItem(
+			"sudoku.game.v1",
+			JSON.stringify({
+				cells: solution.map((value, index) => ({
+					value: index === 0 ? null : value,
+					given: index !== 0,
+					notes: [],
+					invalid: false,
+				})),
+				solution,
+				selectedIndex: 0,
+				difficulty: "easy",
+				pencilMode: false,
+				errors: 0,
+				startedAt: 1,
+				elapsedBeforePause: 0,
+				completedAt: null,
+				seed: 101,
+			}),
+		);
+
+		expect(sudokuStorage.loadGame()?.undoHistory).toEqual([]);
 	});
 
 	it("records better qualifying best times by difficulty", () => {

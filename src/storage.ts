@@ -69,6 +69,7 @@ const createSudokuStorage = () => {
 					...parsed,
 					difficulty,
 					selectedDigit: normalizeDigit(parsed.selectedDigit),
+					undoHistory: normalizeUndoHistory(parsed.undoHistory),
 				};
 			}
 		} catch {
@@ -226,6 +227,20 @@ const normalizeDigit = (digit: unknown): GameState["selectedDigit"] => {
 		digit <= 9
 		? (digit as GameState["selectedDigit"])
 		: null;
+};
+
+const normalizeUndoHistory = (undoHistory: unknown): number[] => {
+	if (!Array.isArray(undoHistory)) {
+		return [];
+	}
+
+	return undoHistory.filter(
+		(index): index is number =>
+			typeof index === "number" &&
+			Number.isInteger(index) &&
+			index >= 0 &&
+			index < 81,
+	);
 };
 
 const normalizeSymbolSet = (symbolSet?: string): SymbolSet | null => {

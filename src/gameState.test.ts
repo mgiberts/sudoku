@@ -25,6 +25,7 @@ const createTestState = (overrides: Partial<GameState> = {}): GameState => {
 		startedAt: Date.now() - 5000,
 		elapsedBeforePause: 0,
 		completedAt: null,
+		undoHistory: [],
 		seed: 101,
 		...overrides,
 	};
@@ -38,6 +39,7 @@ describe("game state", () => {
 		expect(next.errors).toBe(1);
 		expect(next.cells[0].value).toBe(2);
 		expect(next.cells[0].invalid).toBe(true);
+		expect(next.undoHistory).toEqual([0]);
 	});
 
 	it("does not count non-conflicting guesses against the hidden solution", () => {
@@ -81,6 +83,7 @@ describe("game state", () => {
 
 		expect(next.cells[0].value).toBeNull();
 		expect(next.cells[0].notes).toEqual([7]);
+		expect(next.undoHistory).toEqual([]);
 	});
 
 	it("toggles the selected flow digit", () => {
@@ -149,7 +152,7 @@ describe("game state", () => {
 	it("can edit a user-entered valid value", () => {
 		const state = createTestState({
 			cells: createTestState().cells.map((cell, index) =>
-				index === 0 || index === 1
+				index === 0 || index === 1 || index === 2
 					? { ...cell, given: false, value: null }
 					: cell,
 			),
@@ -160,6 +163,54 @@ describe("game state", () => {
 		expect(next.cells[0].value).toBe(3);
 		expect(next.cells[0].invalid).toBe(true);
 		expect(next.errors).toBe(1);
+		expect(next.undoHistory).toEqual([0, 0]);
+	});
+
+	it("undo clears the last value-entered cell without restoring a previous value", () => {
+		const state = createTestState({
+			cells: createTestState().cells.map((cell, index) =>
+				index === 0 || index === 1
+					? { ...cell, given: false, value: null }
+					: cell,
+			),
+		});
+		const withCorrectValue = gameReducer(state, { type: "enter", digit: 1 });
+		const withEditedValue = gameReducer(withCorrectValue, {
+			type: "enter",
+			digit: 3,
+		});
+		const next = gameReducer(withEditedValue, { type: "undo" });
+
+		expect(next.cells[0].value).toBeNull();
+		expect(next.cells[0].invalid).toBe(false);
+		expect(next.undoHistory).toEqual([0]);
+	});
+
+	it("undo clears the most recent value-entered cell", () => {
+		const state = createTestState({
+			cells: createTestState().cells.map((cell, index) =>
+				index === 0 || index === 1 || index === 2
+					? { ...cell, given: false, value: null }
+					: cell,
+			),
+		});
+		const first = gameReducer(state, { type: "enter", digit: 1 });
+		const second = gameReducer(
+			{ ...first, selectedIndex: 1 },
+			{ type: "enter", digit: 2 },
+		);
+		const next = gameReducer(second, { type: "undo" });
+
+		expect(next.selectedIndex).toBe(1);
+		expect(next.cells[0].value).toBe(1);
+		expect(next.cells[1].value).toBeNull();
+		expect(next.undoHistory).toEqual([0]);
+	});
+
+	it("undo does nothing when there is no value-entry history", () => {
+		const state = createTestState();
+
+		expect(gameReducer(state, { type: "undo" })).toBe(state);
 	});
 
 	it("can erase a user-entered valid value", () => {
@@ -194,6 +245,7 @@ describe("game state", () => {
 		expect(next.errors).toBe(0);
 		expect(next.completedAt).toBeNull();
 		expect(next.selectedDigit).toBeNull();
+		expect(next.undoHistory).toEqual([]);
 	});
 
 	it("records completion when the last value is correct", () => {

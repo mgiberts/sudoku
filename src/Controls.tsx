@@ -15,7 +15,6 @@ import { useGame } from "./SudokuContext";
 const pencilIcon = <PenLine size={19} />;
 const eraserIcon = <Eraser size={19} />;
 const resetIcon = <RotateCcw size={19} />;
-// TODO: Implement Undo functionality
 const undoIcon = <Undo size={19} />;
 // TODO: Implement Play/Pause functionality
 // const playIcon = <Play size={19} />;
@@ -51,7 +50,13 @@ export const Controls = ({ onReset }: { onReset: () => void }) => {
 			>
 				{isFlow ? locateFixedIcon : locateIcon}
 			</button>
-			<button className="icon-button" title="Undo" type="button">
+			<button
+				className="icon-button"
+				disabled={state.undoHistory.length === 0}
+				onClick={() => dispatch({ type: "undo" })}
+				title="Undo"
+				type="button"
+			>
 				{undoIcon}
 			</button>
 			<button
