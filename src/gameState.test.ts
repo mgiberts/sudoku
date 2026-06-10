@@ -1,5 +1,6 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import {
+	createInitialGame,
 	gameReducer,
 	getElapsedSeconds,
 	hasPlayerProgress,
@@ -40,6 +41,17 @@ const createTestState = (overrides: Partial<GameState> = {}): GameState => {
 describe("game state", () => {
 	afterEach(() => {
 		vi.restoreAllMocks();
+	});
+
+	it("starts without a selected cell", () => {
+		expect(createInitialGame("easy").selectedIndex).toBeNull();
+	});
+
+	it("ignores digit entry before a cell is selected", () => {
+		const state = createTestState({ selectedIndex: null });
+		const next = gameReducer(state, { type: "enter", digit: 1 });
+
+		expect(next).toBe(state);
 	});
 
 	it("increments errors and marks visible conflicts invalid", () => {
@@ -284,6 +296,7 @@ describe("game state", () => {
 		expect(next.cells).not.toEqual(state.cells);
 		expect(next.errors).toBe(0);
 		expect(next.completedAt).toBeNull();
+		expect(next.selectedIndex).toBeNull();
 		expect(next.selectedDigit).toBeNull();
 		expect(next.pausedAt).toBeNull();
 		expect(next.undoHistory).toEqual([]);

@@ -1,6 +1,5 @@
 import {
 	CircleDot,
-	CircleOff,
 	Grid3X3,
 	Locate,
 	LocateFixed,

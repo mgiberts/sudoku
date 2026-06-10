@@ -71,6 +71,7 @@ const createSudokuStorage = () => {
 				return {
 					...parsed,
 					difficulty,
+					selectedIndex: normalizeSelectedIndex(parsed.selectedIndex),
 					selectedDigit: normalizeDigit(parsed.selectedDigit),
 					pausedAt: normalizeTimestamp(parsed.pausedAt),
 					undoHistory: normalizeUndoHistory(parsed.undoHistory),
@@ -241,6 +242,15 @@ const normalizeDigit = (digit: unknown): GameState["selectedDigit"] => {
 		digit >= 1 &&
 		digit <= 9
 		? (digit as GameState["selectedDigit"])
+		: null;
+};
+
+const normalizeSelectedIndex = (index: unknown): GameState["selectedIndex"] => {
+	return typeof index === "number" &&
+		Number.isInteger(index) &&
+		index >= 0 &&
+		index < 81
+		? index
 		: null;
 };
 

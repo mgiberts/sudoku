@@ -9,10 +9,15 @@ export const Board = () => {
 		digits,
 		numberClasses,
 	} = useSettings();
-	const selectedCell = state.cells[state.selectedIndex];
+	const selectedCell =
+		state.selectedIndex === null ? undefined : state.cells[state.selectedIndex];
 	const selectedValue = selectedCell?.value;
 	const activeDigit =
 		inputStyle === "flow" ? state.selectedDigit : selectedValue;
+	const selectedRow =
+		state.selectedIndex === null ? null : Math.floor(state.selectedIndex / 9);
+	const selectedCol =
+		state.selectedIndex === null ? null : state.selectedIndex % 9;
 
 	return (
 		<div
@@ -22,11 +27,12 @@ export const Board = () => {
 				const row = Math.floor(index / 9);
 				const col = index % 9;
 				const sameUnit =
-					row === Math.floor(state.selectedIndex / 9) ||
-					col === state.selectedIndex % 9 ||
-					(Math.floor(row / 3) ===
-						Math.floor(Math.floor(state.selectedIndex / 9) / 3) &&
-						Math.floor(col / 3) === Math.floor((state.selectedIndex % 9) / 3));
+					selectedRow !== null &&
+					selectedCol !== null &&
+					(row === selectedRow ||
+						col === selectedCol ||
+						(Math.floor(row / 3) === Math.floor(selectedRow / 3) &&
+							Math.floor(col / 3) === Math.floor(selectedCol / 3)));
 				const matchingValue =
 					cell.value !== null &&
 					activeDigit !== null &&

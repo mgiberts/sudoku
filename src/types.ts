@@ -34,7 +34,7 @@ export type Cell = {
 export type GameState = {
 	cells: Cell[];
 	solution: Digit[];
-	selectedIndex: number;
+	selectedIndex: number | null;
 	selectedDigit: Digit | null;
 	difficulty: Difficulty;
 	pencilMode: boolean;

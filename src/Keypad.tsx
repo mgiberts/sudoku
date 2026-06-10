@@ -12,7 +12,8 @@ export const Keypad = () => {
 		digits,
 		numberClasses,
 	} = useSettings();
-	const selectedCell = state.cells[state.selectedIndex];
+	const selectedCell =
+		state.selectedIndex === null ? undefined : state.cells[state.selectedIndex];
 	const selectedValue = selectedCell?.value;
 	const activeDigit =
 		inputStyle === "flow" ? state.selectedDigit : selectedValue;

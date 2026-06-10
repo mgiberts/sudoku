@@ -84,7 +84,7 @@ export const createInitialGame = (difficulty: Difficulty): GameState => {
 			invalid: false,
 		})),
 		solution,
-		selectedIndex: puzzle.indexOf(null),
+		selectedIndex: null,
 		selectedDigit: null,
 		difficulty,
 		pencilMode: false,
@@ -175,7 +175,12 @@ const enterDigit = (state: GameState, digit: Digit): GameState => {
 		return state;
 	}
 
-	const selectedCell = state.cells[state.selectedIndex];
+	if (state.selectedIndex === null) {
+		return state;
+	}
+
+	const selectedIndex = state.selectedIndex;
+	const selectedCell = state.cells[selectedIndex];
 
 	if (selectedCell.given) {
 		return state;
@@ -191,13 +196,13 @@ const enterDigit = (state: GameState, digit: Digit): GameState => {
 			? selectedCell.notes.filter((note) => note !== digit)
 			: [...selectedCell.notes, digit].sort();
 
-		cells[state.selectedIndex] = { ...selectedCell, notes, invalid: false };
+		cells[selectedIndex] = { ...selectedCell, notes, invalid: false };
 		return { ...state, cells };
 	}
 
 	const hasConflict = hasVisibleConflict(state, digit);
 	const candidateCells = state.cells.map((cell, index) =>
-		index === state.selectedIndex
+		index === selectedIndex
 			? {
 					...cell,
 					value: digit,
@@ -210,7 +215,7 @@ const enterDigit = (state: GameState, digit: Digit): GameState => {
 		hasConflict || hasSolution(candidateCells.map((cell) => cell.value));
 	const isInvalid = hasConflict || !canStillSolve;
 	const cells = state.cells.map((cell, index) => {
-		if (index === state.selectedIndex) {
+		if (index === selectedIndex) {
 			return {
 				...cell,
 				value: digit,
@@ -219,7 +224,7 @@ const enterDigit = (state: GameState, digit: Digit): GameState => {
 			};
 		}
 
-		if (!isInvalid && getPeers(state.selectedIndex).includes(index)) {
+		if (!isInvalid && getPeers(selectedIndex).includes(index)) {
 			return {
 				...cell,
 				notes: cell.notes.filter((note) => note !== digit),
@@ -232,7 +237,7 @@ const enterDigit = (state: GameState, digit: Digit): GameState => {
 		...state,
 		cells,
 		errors: isInvalid ? state.errors + 1 : state.errors,
-		undoHistory: [...state.undoHistory, state.selectedIndex],
+		undoHistory: [...state.undoHistory, selectedIndex],
 	};
 
 	return finishIfSolved(nextState);
@@ -259,6 +264,10 @@ const undoLastEntry = (state: GameState): GameState => {
 
 const clearSelectedCell = (state: GameState): GameState => {
 	if (state.completedAt !== null) {
+		return state;
+	}
+
+	if (state.selectedIndex === null) {
 		return state;
 	}
 
@@ -293,6 +302,10 @@ const finishIfSolved = (state: GameState): GameState => {
 };
 
 const hasVisibleConflict = (state: GameState, digit: Digit): boolean => {
+	if (state.selectedIndex === null) {
+		return false;
+	}
+
 	return getPeers(state.selectedIndex).some((peerIndex) => {
 		const peer = state.cells[peerIndex];
 		return peer.value === digit && !peer.invalid;
