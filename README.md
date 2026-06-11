@@ -25,7 +25,7 @@ Open the live game at https://mgiberts.github.io/sudoku/
 
 - Generate unique puzzles in the background with a Web Worker.
 - Ship starter puzzles so new games feel instant.
-- Use curated offline-generated Extreme puzzles for the hardest mode.
+- Use curated offline-generated Expert puzzles for the hardest mode.
 
 ### 3. Become an offline page
 
