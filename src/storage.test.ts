@@ -1,5 +1,7 @@
 import { afterEach, describe, expect, it } from "vitest";
+import { createGameDataV1 } from "./gameData";
 import { sudokuStorage } from "./storage";
+import { createPuzzle } from "./sudoku";
 import type { Digit } from "./types";
 
 describe("sudoku storage", () => {
@@ -119,5 +121,54 @@ describe("sudoku storage", () => {
 
 		expect(next.expert).toBeUndefined();
 		expect(sudokuStorage.loadBestTimes().expert).toBeUndefined();
+	});
+
+	it("records recent expert game ids without duplicates", () => {
+		sudokuStorage.recordRecentExpertGameId("a", 3);
+		sudokuStorage.recordRecentExpertGameId("b", 3);
+		sudokuStorage.recordRecentExpertGameId("a", 3);
+		sudokuStorage.recordRecentExpertGameId("c", 3);
+		sudokuStorage.recordRecentExpertGameId("d", 3);
+
+		expect(sudokuStorage.loadRecentExpertGameIds()).toEqual(["d", "c", "a"]);
+	});
+
+	it("records recent game ids per difficulty", () => {
+		sudokuStorage.recordRecentGameId("easy", "easy-a", 2);
+		sudokuStorage.recordRecentGameId("easy", "easy-b", 2);
+		sudokuStorage.recordRecentGameId("medium", "medium-a", 2);
+		sudokuStorage.recordRecentGameId("easy", "easy-a", 2);
+
+		expect(sudokuStorage.loadRecentGameIds("easy")).toEqual([
+			"easy-a",
+			"easy-b",
+		]);
+		expect(sudokuStorage.loadRecentGameIds("medium")).toEqual(["medium-a"]);
+	});
+
+	it("loads old expert recent ids as a fallback", () => {
+		localStorage.setItem("sudoku.expert.recent.v1", JSON.stringify(["old-a"]));
+
+		expect(sudokuStorage.loadRecentGameIds("expert")).toEqual(["old-a"]);
+	});
+
+	it("stores generated game cache in compact form", () => {
+		const { puzzle, solution, seed } = createPuzzle("easy", 12345);
+		const game = createGameDataV1({
+			difficulty: "easy",
+			puzzle,
+			seed,
+			solution,
+			source: "worker",
+		});
+
+		sudokuStorage.saveGeneratedGameCache("easy", [game]);
+
+		expect(sudokuStorage.loadGeneratedGameCache("easy")).toEqual([game]);
+		expect(localStorage.getItem("sudoku.generatedCache.v1")).toContain(
+			`"puzzle":"${game.puzzle.map((value) => value ?? 0).join("")}"`,
+		);
+		expect(sudokuStorage.consumeGeneratedGameCache("easy")).toEqual(game);
+		expect(sudokuStorage.loadGeneratedGameCache("easy")).toEqual([]);
 	});
 });

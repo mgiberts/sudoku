@@ -6,10 +6,12 @@ import {
 	useMemo,
 	useReducer,
 } from "react";
+import { selectCuratedExpertGame, selectStarterGame } from "./gameCatalog";
+import { gameDataToInitialState } from "./gameData";
 import type { GameAction } from "./gameState";
 import { createInitialGame, gameReducer } from "./gameState";
 import { sudokuStorage } from "./storage";
-import type { GameState } from "./types";
+import type { Difficulty, GameState } from "./types";
 
 const SudokuContext = createContext<
 	| {
@@ -45,6 +47,17 @@ export const useGame = () => {
 const loadGame = (): GameState => {
 	return (
 		sudokuStorage.loadGame() ??
-		createInitialGame(sudokuStorage.loadDefaultDifficulty())
+		createInitialGameForDifficulty(sudokuStorage.loadDefaultDifficulty())
 	);
+};
+
+export const createInitialGameForDifficulty = (
+	difficulty: Difficulty,
+): GameState => {
+	const game =
+		difficulty === "expert"
+			? selectCuratedExpertGame()
+			: selectStarterGame(difficulty);
+
+	return game ? gameDataToInitialState(game) : createInitialGame(difficulty);
 };

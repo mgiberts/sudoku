@@ -1,3 +1,9 @@
+import {
+	type CompactSudokuGameDataV1,
+	compactGameDataV1,
+	expandGameDataV1,
+	type SudokuGameDataV1,
+} from "./gameData";
 import type {
 	BestTime,
 	BestTimes,
@@ -14,6 +20,9 @@ import type {
 const GAME_STORAGE_KEY = "sudoku.game.v1";
 const SETTINGS_STORAGE_KEY = "sudoku.settings.v1";
 const STATS_STORAGE_KEY = "sudoku.stats.v1";
+const EXPERT_RECENT_STORAGE_KEY = "sudoku.expert.recent.v1";
+const RECENT_GAMES_STORAGE_KEY = "sudoku.recentGames.v1";
+const GENERATED_CACHE_STORAGE_KEY = "sudoku.generatedCache.v1";
 
 const DEFAULT_DIFFICULTY: Difficulty = "easy";
 const DEFAULT_SETTINGS: SettingsState = {
@@ -161,6 +170,148 @@ const createSudokuStorage = () => {
 		localStorage.setItem(STATS_STORAGE_KEY, JSON.stringify(bestTimes));
 	};
 
+	const loadGeneratedGameCache = (
+		difficulty: Difficulty,
+	): SudokuGameDataV1[] => {
+		const cache = loadGeneratedGameCacheRecord();
+		const games = cache[difficulty] ?? [];
+
+		return games.map(expandGameDataV1);
+	};
+
+	const saveGeneratedGameCache = (
+		difficulty: Difficulty,
+		games: SudokuGameDataV1[],
+		limit = 1,
+	): void => {
+		const cache = loadGeneratedGameCacheRecord();
+		const deduped = dedupeGamesById(games)
+			.slice(0, limit)
+			.map(compactGameDataV1);
+
+		localStorage.setItem(
+			GENERATED_CACHE_STORAGE_KEY,
+			JSON.stringify({ ...cache, [difficulty]: deduped }),
+		);
+	};
+
+	const consumeGeneratedGameCache = (
+		difficulty: Difficulty,
+	): SudokuGameDataV1 | null => {
+		const games = loadGeneratedGameCache(difficulty);
+		const game = games[0] ?? null;
+
+		if (game) {
+			saveGeneratedGameCache(difficulty, games.slice(1));
+		}
+
+		return game;
+	};
+
+	const loadRecentGameIds = (difficulty: Difficulty): string[] => {
+		const saved = localStorage.getItem(RECENT_GAMES_STORAGE_KEY);
+
+		if (saved) {
+			try {
+				const parsed = JSON.parse(saved) as Partial<
+					Record<Difficulty, unknown>
+				>;
+				const ids = parsed[difficulty];
+
+				return Array.isArray(ids)
+					? ids.filter((id): id is string => typeof id === "string")
+					: [];
+			} catch {
+				localStorage.removeItem(RECENT_GAMES_STORAGE_KEY);
+			}
+		}
+
+		if (difficulty !== "expert") {
+			return [];
+		}
+
+		return loadRecentExpertGameIds();
+	};
+
+	const recordRecentGameId = (
+		difficulty: Difficulty,
+		gameId: string,
+		limit = 12,
+	): string[] => {
+		const next = [
+			gameId,
+			...loadRecentGameIds(difficulty).filter((id) => id !== gameId),
+		].slice(0, limit);
+		const saved = localStorage.getItem(RECENT_GAMES_STORAGE_KEY);
+		let current: Partial<Record<Difficulty, string[]>> = {};
+
+		try {
+			current = saved
+				? (JSON.parse(saved) as Partial<Record<Difficulty, string[]>>)
+				: {};
+		} catch {
+			current = {};
+		}
+
+		localStorage.setItem(
+			RECENT_GAMES_STORAGE_KEY,
+			JSON.stringify({ ...current, [difficulty]: next }),
+		);
+
+		return next;
+	};
+
+	const loadRecentExpertGameIds = (): string[] => {
+		const recent = loadRecentGameIdsFromCurrentStorage("expert");
+
+		if (recent.length > 0) {
+			return recent;
+		}
+
+		const saved = localStorage.getItem(EXPERT_RECENT_STORAGE_KEY);
+
+		if (!saved) {
+			return [];
+		}
+
+		try {
+			const parsed = JSON.parse(saved) as unknown;
+
+			return Array.isArray(parsed)
+				? parsed.filter((id): id is string => typeof id === "string")
+				: [];
+		} catch {
+			localStorage.removeItem(EXPERT_RECENT_STORAGE_KEY);
+			return [];
+		}
+	};
+
+	const loadRecentGameIdsFromCurrentStorage = (
+		difficulty: Difficulty,
+	): string[] => {
+		const saved = localStorage.getItem(RECENT_GAMES_STORAGE_KEY);
+
+		if (!saved) {
+			return [];
+		}
+
+		try {
+			const parsed = JSON.parse(saved) as Partial<Record<Difficulty, unknown>>;
+			const ids = parsed[difficulty];
+
+			return Array.isArray(ids)
+				? ids.filter((id): id is string => typeof id === "string")
+				: [];
+		} catch {
+			localStorage.removeItem(RECENT_GAMES_STORAGE_KEY);
+			return [];
+		}
+	};
+
+	const recordRecentExpertGameId = (gameId: string, limit = 12): string[] => {
+		return recordRecentGameId("expert", gameId, limit);
+	};
+
 	const recordBestTime = (
 		difficulty: Difficulty,
 		score: BestTime,
@@ -194,19 +345,89 @@ const createSudokuStorage = () => {
 	return {
 		loadBestTimes,
 		loadDefaultDifficulty,
+		loadGeneratedGameCache,
 		loadGame,
+		loadRecentGameIds,
+		loadRecentExpertGameIds,
 		loadSettings,
 		removeGame,
 		removeSettings,
 		removeStats,
 		recordBestTime,
+		recordRecentGameId,
+		recordRecentExpertGameId,
+		consumeGeneratedGameCache,
 		saveBestTimes,
+		saveGeneratedGameCache,
 		saveGame,
 		saveSettings,
 	};
 };
 
 export const sudokuStorage = createSudokuStorage();
+
+const loadGeneratedGameCacheRecord = (): Partial<
+	Record<Difficulty, CompactSudokuGameDataV1[]>
+> => {
+	const saved = localStorage.getItem(GENERATED_CACHE_STORAGE_KEY);
+
+	if (!saved) {
+		return {};
+	}
+
+	try {
+		const parsed = JSON.parse(saved) as Partial<
+			Record<Difficulty, CompactSudokuGameDataV1[]>
+		>;
+		const cache: Partial<Record<Difficulty, CompactSudokuGameDataV1[]>> = {};
+
+		for (const difficulty of DIFFICULTIES) {
+			const games = parsed[difficulty];
+
+			if (Array.isArray(games)) {
+				cache[difficulty] = games.filter(isCompactGameData);
+			}
+		}
+
+		return cache;
+	} catch {
+		localStorage.removeItem(GENERATED_CACHE_STORAGE_KEY);
+		return {};
+	}
+};
+
+const isCompactGameData = (game: unknown): game is CompactSudokuGameDataV1 => {
+	if (!game || typeof game !== "object") {
+		return false;
+	}
+
+	const candidate = game as Partial<CompactSudokuGameDataV1>;
+	return (
+		typeof candidate.id === "string" &&
+		typeof candidate.puzzle === "string" &&
+		candidate.puzzle.length === 81 &&
+		typeof candidate.solution === "string" &&
+		candidate.solution.length === 81 &&
+		typeof candidate.difficulty === "string" &&
+		DIFFICULTIES.has(candidate.difficulty as Difficulty)
+	);
+};
+
+const dedupeGamesById = (games: SudokuGameDataV1[]): SudokuGameDataV1[] => {
+	const seen = new Set<string>();
+	const deduped: SudokuGameDataV1[] = [];
+
+	for (const game of games) {
+		if (seen.has(game.id)) {
+			continue;
+		}
+
+		seen.add(game.id);
+		deduped.push(game);
+	}
+
+	return deduped;
+};
 
 const normalizeDifficulty = (difficulty?: string): Difficulty | null => {
 	if (!difficulty) {

@@ -1,4 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
+import { createGameDataV1 } from "./gameData";
 import {
 	createInitialGame,
 	gameReducer,
@@ -299,6 +300,35 @@ describe("game state", () => {
 		expect(next.selectedIndex).toBeNull();
 		expect(next.selectedDigit).toBeNull();
 		expect(next.pausedAt).toBeNull();
+		expect(next.undoHistory).toEqual([]);
+	});
+
+	it("starts a fresh puzzle from standardized game data", () => {
+		const state = createTestState({
+			selectedIndex: 0,
+			selectedDigit: 5,
+			errors: 2,
+			undoHistory: [0],
+		});
+		const puzzle = state.solution.map((value, index) =>
+			index < 42 ? value : null,
+		);
+		const game = createGameDataV1({
+			difficulty: "easy",
+			puzzle,
+			seed: 222,
+			solution: state.solution,
+			source: "starter",
+		});
+		const next = gameReducer(state, { type: "new-game-data", game });
+
+		expect(next.difficulty).toBe("easy");
+		expect(next.cells.map((cell) => cell.value)).toEqual(puzzle);
+		expect(next.solution).toEqual(state.solution);
+		expect(next.seed).toBe(222);
+		expect(next.errors).toBe(0);
+		expect(next.selectedIndex).toBeNull();
+		expect(next.selectedDigit).toBeNull();
 		expect(next.undoHistory).toEqual([]);
 	});
 

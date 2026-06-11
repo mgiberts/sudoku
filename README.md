@@ -34,6 +34,12 @@ Open the live game at https://mgiberts.github.io/sudoku/
 - Show a stable fallback experience when the user opens the page without network access.
 - Test installability and offline loading in Chrome DevTools.
 
+### 4. Game history and seed sharing
+
+- Add a history panel that shows the player's most recent games.
+- Let players replay a game from their history.
+- Let players share a game seed with others so they can compete for the best time.
+
 ## License
 
 This project is licensed under the PolyForm Noncommercial License 1.0.0. You may use, copy, modify, and distribute the code for noncommercial purposes only. See [LICENSE](LICENSE) for details.

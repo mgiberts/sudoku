@@ -1,3 +1,5 @@
+import type { SudokuGameDataV1 } from "./gameData";
+import { gameDataToInitialState } from "./gameData";
 import {
 	createPuzzle,
 	getPeers,
@@ -16,7 +18,8 @@ export type GameAction =
 	| { type: "undo" }
 	| { type: "pause" }
 	| { type: "resume" }
-	| { type: "new-game"; difficulty: Difficulty };
+	| { type: "new-game"; difficulty: Difficulty }
+	| { type: "new-game-data"; game: SudokuGameDataV1 };
 
 export const gameReducer = (
 	state: GameState,
@@ -68,6 +71,8 @@ export const gameReducer = (
 			return resumeGame(state);
 		case "new-game":
 			return createInitialGame(action.difficulty);
+		case "new-game-data":
+			return gameDataToInitialState(action.game);
 		default:
 			return state;
 	}
