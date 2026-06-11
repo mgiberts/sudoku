@@ -1,10 +1,18 @@
 # Sudoku
 
-A compact Sudoku game built for quick play in the browser.
+A client-only Sudoku game built for quick, focused play in the browser.
 
 ## Play
 
-Open the live game at https://mgiberts.github.io/sudoku/
+Visit and play here: https://mgiberts.github.io/sudoku/
+
+| | | |
+|---|---|---|
+| ![Sudoku board with dotted number style](docs/assets/screenshot-game-dots.png) | ![Sudoku settings panel](docs/assets/screenshot-game-settings.png) | ![Sudoku board with note-taking mode](docs/assets/screenshot-game-notes.png) |
+
+## Documentation
+
+- [Architecture](docs/ARCHITECTURE.md)
 
 ## Stack
 
@@ -15,26 +23,14 @@ Open the live game at https://mgiberts.github.io/sudoku/
 
 ## Roadmap
 
-### 1. GitHub Pages site
-
-- Published at https://mgiberts.github.io/sudoku/
-- Uses a GitHub Actions workflow to build and deploy `dist/`.
-- Uses Vite `base: "/sudoku/"` for repository Pages hosting.
-
-### 2. Smarter puzzle generation
-
-- Generate unique puzzles in the background with a Web Worker.
-- Ship starter puzzles so new games feel instant.
-- Use curated offline-generated Expert puzzles for the hardest mode.
-
-### 3. Become an offline page
+### 1. Become an offline page
 
 - Add a web app manifest with app name, theme color, and icons.
 - Add a small service worker that caches the built HTML, CSS, JavaScript, and static assets.
 - Show a stable fallback experience when the user opens the page without network access.
 - Test installability and offline loading in Chrome DevTools.
 
-### 4. Game history and seed sharing
+### 2. Game history and seed sharing
 
 - Add a history panel that shows the player's most recent games.
 - Let players replay a game from their history.
