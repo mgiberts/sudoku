@@ -2,3 +2,5 @@ dist
 node_modules
 .DS_Store
 docs/workflow/*
+scripts/output
+scripts/input/curated-expert.txt

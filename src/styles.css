@@ -203,11 +203,28 @@ button {
 }
 
 .app-settings {
-	grid-column: span 2 / span 2;
-	grid-column-start: 8;
+	grid-column: span 3 / span 3;
+	grid-column-start: 7;
 	display: flex;
+	align-items: center;
 	justify-content: flex-end;
 	gap: var(--space-2);
+}
+
+.worker-status {
+	width: 32px;
+	height: 32px;
+	display: grid;
+	place-items: center;
+	border: 1px solid color-mix(in srgb, var(--accent) 45%, var(--border));
+	border-radius: var(--radius);
+	color: var(--accent);
+	background: color-mix(in srgb, var(--accent) 10%, var(--surface-raised));
+	animation: pulse-status 2.4s ease-in-out infinite;
+}
+
+.worker-status svg {
+	display: block;
 }
 
 .controls-row button {
@@ -729,6 +746,10 @@ legend {
 	color: var(--sparkle);
 }
 
+.spin-icon {
+	animation: spin 1s linear infinite;
+}
+
 .dialog h2 {
 	margin: var(--space-3) 0 var(--space-2);
 	font-size: 1.8rem;
@@ -747,6 +768,25 @@ legend {
 
 .dialog .primary-action svg {
 	color: var(--surface);
+}
+
+@keyframes spin {
+	to {
+		transform: rotate(360deg);
+	}
+}
+
+@keyframes pulse-status {
+	0%,
+	100% {
+		opacity: 0.58;
+		transform: scale(0.96);
+	}
+
+	50% {
+		opacity: 1;
+		transform: scale(1);
+	}
 }
 
 .primary-action,
