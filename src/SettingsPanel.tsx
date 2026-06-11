@@ -6,6 +6,8 @@ import {
 	Moon,
 	Sun,
 	SunMoon,
+	Timer,
+	TimerOff,
 } from "lucide-react";
 import { ModalPanel } from "./ModalPanel";
 import { useSettings } from "./SettingsContext";
@@ -15,6 +17,7 @@ import type {
 	EmptyCellDisplay,
 	InputStyle,
 	NumberColorScheme,
+	PlayMode,
 	ThemeSetting,
 } from "./types";
 
@@ -32,6 +35,12 @@ const inputStyleLabels: Record<InputStyle, string> = {
 	flow: "Flow",
 };
 const inputStyleOptions = Object.keys(inputStyleLabels) as InputStyle[];
+
+const playModeLabels: Record<PlayMode, string> = {
+	timer: "Timer",
+	zen: "Zen",
+};
+const playModeOptions = Object.keys(playModeLabels) as PlayMode[];
 
 const emptyCellDisplayLabels: Record<EmptyCellDisplay, string> = {
 	clean: "Lines",
@@ -70,6 +79,7 @@ export const SettingsPanel = ({
 		updateEmptyCellDisplay,
 		updateInputStyle,
 		updateNumberColorScheme,
+		updatePlayMode,
 		updateSymbolSet,
 		updateTheme,
 	} = useSettings();
@@ -102,6 +112,21 @@ export const SettingsPanel = ({
 						type="button"
 					>
 						{difficultyLabels[option]}
+					</button>
+				))}
+			</fieldset>
+			<fieldset className="segmented settings-control">
+				<legend>Play mode</legend>
+				{playModeOptions.map((option) => (
+					<button
+						className={option === settings.playMode ? "active" : ""}
+						key={option}
+						onClick={() => updatePlayMode(option)}
+						type="button"
+					>
+						{option === "timer" && <Timer size={14} />}
+						{option === "zen" && <TimerOff size={14} />}
+						{playModeLabels[option]}
 					</button>
 				))}
 			</fieldset>

@@ -12,6 +12,7 @@ import type {
 	GameState,
 	InputStyle,
 	NumberColorScheme,
+	PlayMode,
 	SettingsState,
 	SymbolSet,
 	ThemeSetting,
@@ -30,6 +31,7 @@ const DEFAULT_SETTINGS: SettingsState = {
 	emptyCellDisplay: "clean",
 	inputStyle: "single",
 	numberColorScheme: "color",
+	playMode: "timer",
 	symbolSet: "digits",
 	theme: "auto",
 };
@@ -46,6 +48,7 @@ const NUMBER_COLOR_SCHEMES = new Set<NumberColorScheme>([
 	"color",
 	"monochrome",
 ]);
+const PLAY_MODES = new Set<PlayMode>(["timer", "zen"]);
 const SYMBOL_SETS = new Set<SymbolSet>(["digits", "kanji", "emoji"]);
 const THEMES = new Set<ThemeSetting>(["light", "dark", "auto"]);
 export const BEST_TIME_ERROR_LIMITS: Record<Difficulty, number> = {
@@ -122,6 +125,8 @@ const createSudokuStorage = () => {
 				numberColorScheme:
 					normalizeNumberColorScheme(parsed.numberColorScheme) ??
 					DEFAULT_SETTINGS.numberColorScheme,
+				playMode:
+					normalizePlayMode(parsed.playMode) ?? DEFAULT_SETTINGS.playMode,
 				symbolSet:
 					normalizeSymbolSet(parsed.symbolSet) ?? DEFAULT_SETTINGS.symbolSet,
 				theme: normalizeTheme(parsed.theme) ?? DEFAULT_SETTINGS.theme,
@@ -507,6 +512,10 @@ const normalizeNumberColorScheme = (
 	return NUMBER_COLOR_SCHEMES.has(numberColorScheme as NumberColorScheme)
 		? (numberColorScheme as NumberColorScheme)
 		: null;
+};
+
+const normalizePlayMode = (playMode?: string): PlayMode | null => {
+	return PLAY_MODES.has(playMode as PlayMode) ? (playMode as PlayMode) : null;
 };
 
 const normalizeTheme = (theme?: string): ThemeSetting | null => {

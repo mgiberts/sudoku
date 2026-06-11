@@ -14,6 +14,7 @@ import type {
 	EmptyCellDisplay,
 	InputStyle,
 	NumberColorScheme,
+	PlayMode,
 	SettingsState,
 	SymbolSet,
 	ThemeSetting,
@@ -39,6 +40,7 @@ type SettingsContextValue = {
 	updateEmptyCellDisplay: (emptyCellDisplay: EmptyCellDisplay) => void;
 	updateInputStyle: (inputStyle: InputStyle) => void;
 	updateNumberColorScheme: (numberColorScheme: NumberColorScheme) => void;
+	updatePlayMode: (playMode: PlayMode) => void;
 	updateSymbolSet: (symbolSet: SymbolSet) => void;
 	updateTheme: (theme: ThemeSetting) => void;
 	digits: Digit[];
@@ -81,6 +83,10 @@ export const SettingsProvider = ({ children }: { children: ReactNode }) => {
 			setSettings((current) => ({ ...current, numberColorScheme }));
 		};
 
+		const updatePlayMode = (playMode: PlayMode) => {
+			setSettings((current) => ({ ...current, playMode }));
+		};
+
 		const updateTheme = (theme: ThemeSetting) => {
 			setSettings((current) => ({ ...current, theme }));
 		};
@@ -92,6 +98,7 @@ export const SettingsProvider = ({ children }: { children: ReactNode }) => {
 			updateEmptyCellDisplay,
 			updateInputStyle,
 			updateNumberColorScheme,
+			updatePlayMode,
 			updateSymbolSet,
 			updateTheme,
 			digits: DIGITS,

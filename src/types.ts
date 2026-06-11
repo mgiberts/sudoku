@@ -7,6 +7,7 @@ export type SymbolSet = "digits" | "kanji" | "emoji";
 export type NumberColorScheme = "color" | "monochrome";
 export type InputStyle = "single" | "flow";
 export type EmptyCellDisplay = "clean" | "dots";
+export type PlayMode = "timer" | "zen";
 
 export type BestTime = {
 	seconds: number;
@@ -20,6 +21,7 @@ export type SettingsState = {
 	emptyCellDisplay: EmptyCellDisplay;
 	inputStyle: InputStyle;
 	numberColorScheme: NumberColorScheme;
+	playMode: PlayMode;
 	symbolSet: SymbolSet;
 	theme: ThemeSetting;
 };

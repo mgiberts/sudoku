@@ -251,9 +251,15 @@ const CompletionDialog = ({
 	open?: boolean;
 }) => {
 	const { state } = useGame();
+	const {
+		settings: { playMode },
+	} = useSettings();
 	const elapsedSeconds = state.completedAt
 		? getElapsedSeconds(state, state.completedAt)
 		: 0;
+	const duration = formatDuration(elapsedSeconds);
+	const difficultyLabel = difficultyLabels[state.difficulty];
+	const difficultyArticle = difficultyLabel === "Easy" ? "an" : "a";
 	const isOverBestTimeLimit =
 		errors >= BEST_TIME_ERROR_LIMITS[state.difficulty];
 
@@ -269,14 +275,19 @@ const CompletionDialog = ({
 			icon={<Sparkles size={32} />}
 			label="Puzzle complete"
 			message={
-				<>
-					{formatDuration(elapsedSeconds)} with{" "}
-					<span
-						className={isOverBestTimeLimit ? "score-errors over-limit" : ""}
-					>
-						{errors} {errors === 1 ? "error" : "errors"}
-					</span>
-				</>
+				playMode === "zen" ? (
+					<>Finished in {duration}.</>
+				) : (
+					<>
+						Finished {difficultyArticle} {difficultyLabel} puzzle in {duration}{" "}
+						with{" "}
+						<span
+							className={isOverBestTimeLimit ? "score-errors over-limit" : ""}
+						>
+							{errors} {errors === 1 ? "error" : "errors"}
+						</span>
+					</>
+				)
 			}
 			title="Complete"
 		/>

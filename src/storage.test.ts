@@ -17,6 +17,10 @@ describe("sudoku storage", () => {
 		expect(sudokuStorage.loadSettings().emptyCellDisplay).toBe("clean");
 	});
 
+	it("defaults play mode to timer", () => {
+		expect(sudokuStorage.loadSettings().playMode).toBe("timer");
+	});
+
 	it("loads a saved monochrome board number color scheme", () => {
 		localStorage.setItem(
 			"sudoku.settings.v1",
@@ -25,6 +29,7 @@ describe("sudoku storage", () => {
 				emptyCellDisplay: "dots",
 				inputStyle: "flow",
 				numberColorScheme: "monochrome",
+				playMode: "zen",
 				symbolSet: "kanji",
 				theme: "dark",
 			}),
@@ -35,6 +40,7 @@ describe("sudoku storage", () => {
 			emptyCellDisplay: "dots",
 			inputStyle: "flow",
 			numberColorScheme: "monochrome",
+			playMode: "zen",
 			symbolSet: "kanji",
 			theme: "dark",
 		});
@@ -65,6 +71,15 @@ describe("sudoku storage", () => {
 		);
 
 		expect(sudokuStorage.loadSettings().emptyCellDisplay).toBe("clean");
+	});
+
+	it("falls back to timer mode for invalid play modes", () => {
+		localStorage.setItem(
+			"sudoku.settings.v1",
+			JSON.stringify({ playMode: "rush" }),
+		);
+
+		expect(sudokuStorage.loadSettings().playMode).toBe("timer");
 	});
 
 	it("normalizes missing undo history on saved games", () => {

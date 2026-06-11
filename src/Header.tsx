@@ -25,7 +25,7 @@ export const Header = ({
 }) => {
 	const { state } = useGame();
 	const {
-		settings: { symbolSet },
+		settings: { playMode, symbolSet },
 	} = useSettings();
 	const gameName = symbolSet === "kanji" ? "数独" : "Sudoku";
 
@@ -70,10 +70,12 @@ export const Header = ({
 				</div>
 			</header>
 
-			<div className="grid">
-				<ElapsedTime />
-				<Stat label="Errors" value={String(state.errors)} />
-			</div>
+			{playMode === "timer" ? (
+				<div className="grid game-stats">
+					<ElapsedTime />
+					<Stat label="Errors" value={String(state.errors)} />
+				</div>
+			) : null}
 		</>
 	);
 };
