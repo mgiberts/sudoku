@@ -34,7 +34,7 @@ export const Controls = ({ onReset }: { onReset: () => void }) => {
 		<div className="grid controls-row">
 			<button
 				aria-pressed={state.pencilMode}
-				className={`icon-button ${state.pencilMode ? "active" : ""}`}
+				className={`icon-button ${state.pencilMode ? "active" : ""} ${settings.playMode !== "timer" ? "wide" : ""}`}
 				onClick={() => dispatch({ type: "toggle-pencil" })}
 				title="Pencil mode"
 				type="button"
@@ -74,17 +74,19 @@ export const Controls = ({ onReset }: { onReset: () => void }) => {
 			>
 				{resetIcon}
 			</button>
-			<button
-				className={`icon-button ${state.pausedAt !== null ? "active" : ""}`}
-				disabled={state.completedAt !== null}
-				onClick={() =>
-					dispatch({ type: state.pausedAt === null ? "pause" : "resume" })
-				}
-				title={state.pausedAt === null ? "Pause" : "Resume"}
-				type="button"
-			>
-				{state.pausedAt === null ? pauseIcon : playIcon}
-			</button>
+			{settings.playMode === "timer" && (
+				<button
+					className={`icon-button ${state.pausedAt !== null ? "active" : ""}`}
+					disabled={state.completedAt !== null}
+					onClick={() =>
+						dispatch({ type: state.pausedAt === null ? "pause" : "resume" })
+					}
+					title={state.pausedAt === null ? "Pause" : "Resume"}
+					type="button"
+				>
+					{state.pausedAt === null ? pauseIcon : playIcon}
+				</button>
+			)}
 		</div>
 	);
 };
