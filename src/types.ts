@@ -33,6 +33,18 @@ export type Cell = {
 	invalid: boolean;
 };
 
+export type UndoCellSnapshot = {
+	index: number;
+	cell: Cell;
+};
+
+export type UndoEntry = {
+	cells: UndoCellSnapshot[];
+	completedAt: number | null;
+	errors: number;
+	selectedIndex: number | null;
+};
+
 export type GameState = {
 	cells: Cell[];
 	solution: Digit[];
@@ -45,6 +57,6 @@ export type GameState = {
 	elapsedBeforePause: number;
 	pausedAt: number | null;
 	completedAt: number | null;
-	undoHistory: number[];
+	undoHistory: UndoEntry[];
 	seed: number;
 };

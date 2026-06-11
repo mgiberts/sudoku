@@ -16,6 +16,7 @@ import type {
 	SettingsState,
 	SymbolSet,
 	ThemeSetting,
+	UndoEntry,
 } from "./types";
 
 const GAME_STORAGE_KEY = "sudoku.game.v1";
@@ -486,18 +487,12 @@ const normalizeTimestamp = (timestamp: unknown): number | null => {
 		: null;
 };
 
-const normalizeUndoHistory = (undoHistory: unknown): number[] => {
+const normalizeUndoHistory = (undoHistory: unknown): UndoEntry[] => {
 	if (!Array.isArray(undoHistory)) {
 		return [];
 	}
 
-	return undoHistory.filter(
-		(index): index is number =>
-			typeof index === "number" &&
-			Number.isInteger(index) &&
-			index >= 0 &&
-			index < 81,
-	);
+	return undoHistory.filter(isUndoEntry);
 };
 
 const normalizeSymbolSet = (symbolSet?: string): SymbolSet | null => {
@@ -520,6 +515,71 @@ const normalizePlayMode = (playMode?: string): PlayMode | null => {
 
 const normalizeTheme = (theme?: string): ThemeSetting | null => {
 	return THEMES.has(theme as ThemeSetting) ? (theme as ThemeSetting) : null;
+};
+
+const isUndoEntry = (entry: unknown): entry is UndoEntry => {
+	if (!entry || typeof entry !== "object") {
+		return false;
+	}
+
+	const candidate = entry as Partial<UndoEntry>;
+
+	return (
+		Array.isArray(candidate.cells) &&
+		candidate.cells.every(isUndoCellSnapshot) &&
+		normalizeTimestamp(candidate.completedAt) === candidate.completedAt &&
+		typeof candidate.errors === "number" &&
+		Number.isInteger(candidate.errors) &&
+		candidate.errors >= 0 &&
+		normalizeSelectedIndex(candidate.selectedIndex) === candidate.selectedIndex
+	);
+};
+
+const isUndoCellSnapshot = (
+	snapshot: unknown,
+): snapshot is UndoEntry["cells"][number] => {
+	if (!snapshot || typeof snapshot !== "object") {
+		return false;
+	}
+
+	const candidate = snapshot as Partial<UndoEntry["cells"][number]>;
+
+	return (
+		typeof candidate.index === "number" &&
+		Number.isInteger(candidate.index) &&
+		candidate.index >= 0 &&
+		candidate.index < 81 &&
+		isStoredCell(candidate.cell)
+	);
+};
+
+const isStoredCell = (
+	cell: unknown,
+): cell is UndoEntry["cells"][number]["cell"] => {
+	if (!cell || typeof cell !== "object") {
+		return false;
+	}
+
+	const candidate = cell as Partial<UndoEntry["cells"][number]["cell"]>;
+
+	return (
+		(candidate.value === null || isDigit(candidate.value)) &&
+		typeof candidate.given === "boolean" &&
+		Array.isArray(candidate.notes) &&
+		candidate.notes.every(isDigit) &&
+		typeof candidate.invalid === "boolean"
+	);
+};
+
+const isDigit = (
+	value: unknown,
+): value is UndoEntry["cells"][number]["cell"]["notes"][number] => {
+	return (
+		typeof value === "number" &&
+		Number.isInteger(value) &&
+		value >= 1 &&
+		value <= 9
+	);
 };
 
 const isBestTime = (score: unknown): score is BestTime => {

@@ -62,7 +62,7 @@ describe("game state", () => {
 		expect(next.errors).toBe(1);
 		expect(next.cells[0].value).toBe(2);
 		expect(next.cells[0].invalid).toBe(true);
-		expect(next.undoHistory).toEqual([0]);
+		expect(next.undoHistory).toHaveLength(1);
 	});
 
 	it("does not count non-conflicting guesses against the hidden solution", () => {
@@ -98,6 +98,9 @@ describe("game state", () => {
 		const next = gameReducer(state, { type: "enter", digit: 1 });
 
 		expect(next.cells[1].notes).toEqual([4]);
+
+		const undone = gameReducer(next, { type: "undo" });
+		expect(undone.cells[1].notes).toEqual([1, 4]);
 	});
 
 	it("toggles pencil notes without setting a cell value", () => {
@@ -106,7 +109,10 @@ describe("game state", () => {
 
 		expect(next.cells[0].value).toBeNull();
 		expect(next.cells[0].notes).toEqual([7]);
-		expect(next.undoHistory).toEqual([]);
+		expect(next.undoHistory).toHaveLength(1);
+
+		const undone = gameReducer(next, { type: "undo" });
+		expect(undone.cells[0].notes).toEqual([]);
 	});
 
 	it("toggles the selected flow digit", () => {
@@ -186,10 +192,10 @@ describe("game state", () => {
 		expect(next.cells[0].value).toBe(3);
 		expect(next.cells[0].invalid).toBe(true);
 		expect(next.errors).toBe(1);
-		expect(next.undoHistory).toEqual([0, 0]);
+		expect(next.undoHistory).toHaveLength(2);
 	});
 
-	it("undo clears the last value-entered cell without restoring a previous value", () => {
+	it("undo restores the previous value-entered cell state", () => {
 		const state = createTestState({
 			cells: createTestState().cells.map((cell, index) =>
 				index === 0 || index === 1
@@ -204,9 +210,9 @@ describe("game state", () => {
 		});
 		const next = gameReducer(withEditedValue, { type: "undo" });
 
-		expect(next.cells[0].value).toBeNull();
+		expect(next.cells[0].value).toBe(1);
 		expect(next.cells[0].invalid).toBe(false);
-		expect(next.undoHistory).toEqual([0]);
+		expect(next.undoHistory).toHaveLength(1);
 	});
 
 	it("undo clears the most recent value-entered cell", () => {
@@ -227,7 +233,30 @@ describe("game state", () => {
 		expect(next.selectedIndex).toBe(1);
 		expect(next.cells[0].value).toBe(1);
 		expect(next.cells[1].value).toBeNull();
-		expect(next.undoHistory).toEqual([0]);
+		expect(next.undoHistory).toHaveLength(1);
+	});
+
+	it("undo restores invalid input with previous notes and error count", () => {
+		const state = createTestState({
+			cells: createTestState().cells.map((cell, index) =>
+				index === 0 ? { ...cell, notes: [1, 3] } : cell,
+			),
+		});
+		const next = gameReducer(state, { type: "enter", digit: 2 });
+		const undone = gameReducer(next, { type: "undo" });
+
+		expect(next.errors).toBe(1);
+		expect(next.cells[0]).toMatchObject({
+			value: 2,
+			notes: [],
+			invalid: true,
+		});
+		expect(undone.errors).toBe(0);
+		expect(undone.cells[0]).toMatchObject({
+			value: null,
+			notes: [1, 3],
+			invalid: false,
+		});
 	});
 
 	it("undo does nothing when there is no value-entry history", () => {
@@ -276,21 +305,34 @@ describe("game state", () => {
 		});
 		const withCorrectValue = gameReducer(state, { type: "enter", digit: 1 });
 		const next = gameReducer(withCorrectValue, { type: "erase" });
+		const undone = gameReducer(next, { type: "undo" });
 
 		expect(next.cells[0].value).toBeNull();
 		expect(next.cells[0].invalid).toBe(false);
+		expect(undone.cells[0].value).toBe(1);
+		expect(undone.cells[0].invalid).toBe(false);
 	});
 
 	it("starts a fresh puzzle for a new game", () => {
-		const state = createTestState({
+		const stateWithUndo = gameReducer(createTestState(), {
+			type: "enter",
+			digit: 2,
+		});
+		const state = {
+			...stateWithUndo,
 			cells: createTestState().cells.map((cell, index) =>
 				index === 0
-					? { ...cell, value: 4, notes: [1, 2], invalid: true }
+					? {
+							...cell,
+							value: 4 as Digit,
+							notes: [1, 2] as Digit[],
+							invalid: true,
+						}
 					: cell,
 			),
 			errors: 2,
 			completedAt: Date.now(),
-		});
+		};
 		const next = gameReducer(state, { type: "new-game", difficulty: "easy" });
 
 		expect(next.seed).not.toBe(state.seed);
@@ -304,12 +346,16 @@ describe("game state", () => {
 	});
 
 	it("starts a fresh puzzle from standardized game data", () => {
-		const state = createTestState({
-			selectedIndex: 0,
-			selectedDigit: 5,
-			errors: 2,
-			undoHistory: [0],
+		const stateWithUndo = gameReducer(createTestState(), {
+			type: "enter",
+			digit: 2,
 		});
+		const state = {
+			...stateWithUndo,
+			selectedIndex: 0,
+			selectedDigit: 5 as Digit,
+			errors: 2,
+		};
 		const puzzle = state.solution.map((value, index) =>
 			index < 42 ? value : null,
 		);

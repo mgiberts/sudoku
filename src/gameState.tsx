@@ -6,7 +6,7 @@ import {
 	hasSolution,
 	isValidSolvedBoard,
 } from "./sudoku";
-import type { Cell, Difficulty, Digit, GameState } from "./types";
+import type { Cell, Difficulty, Digit, GameState, UndoEntry } from "./types";
 
 export type GameAction =
 	| { type: "select"; index: number }
@@ -202,7 +202,14 @@ const enterDigit = (state: GameState, digit: Digit): GameState => {
 			: [...selectedCell.notes, digit].sort();
 
 		cells[selectedIndex] = { ...selectedCell, notes, invalid: false };
-		return { ...state, cells };
+		return {
+			...state,
+			cells,
+			undoHistory: [
+				...state.undoHistory,
+				createUndoEntry(state, [selectedIndex]),
+			],
+		};
 	}
 
 	const hasConflict = hasVisibleConflict(state, digit);
@@ -219,6 +226,8 @@ const enterDigit = (state: GameState, digit: Digit): GameState => {
 	const canStillSolve =
 		hasConflict || hasSolution(candidateCells.map((cell) => cell.value));
 	const isInvalid = hasConflict || !canStillSolve;
+	const changedIndexes = new Set([selectedIndex]);
+	const peerIndexes = getPeers(selectedIndex);
 	const cells = state.cells.map((cell, index) => {
 		if (index === selectedIndex) {
 			return {
@@ -229,7 +238,12 @@ const enterDigit = (state: GameState, digit: Digit): GameState => {
 			};
 		}
 
-		if (!isInvalid && getPeers(selectedIndex).includes(index)) {
+		if (
+			!isInvalid &&
+			peerIndexes.includes(index) &&
+			cell.notes.includes(digit)
+		) {
+			changedIndexes.add(index);
 			return {
 				...cell,
 				notes: cell.notes.filter((note) => note !== digit),
@@ -242,7 +256,10 @@ const enterDigit = (state: GameState, digit: Digit): GameState => {
 		...state,
 		cells,
 		errors: isInvalid ? state.errors + 1 : state.errors,
-		undoHistory: [...state.undoHistory, selectedIndex],
+		undoHistory: [
+			...state.undoHistory,
+			createUndoEntry(state, [...changedIndexes]),
+		],
 	};
 
 	return finishIfSolved(nextState);
@@ -258,13 +275,21 @@ const undoLastEntry = (state: GameState): GameState => {
 	}
 
 	const undoHistory = state.undoHistory.slice(0, -1);
-	const selectedIndex = state.undoHistory[state.undoHistory.length - 1];
+	const entry = state.undoHistory[state.undoHistory.length - 1];
+	const cells = [...state.cells];
 
-	return clearSelectedCell({
+	for (const snapshot of entry.cells) {
+		cells[snapshot.index] = snapshot.cell;
+	}
+
+	return {
 		...state,
-		selectedIndex,
+		cells,
+		completedAt: entry.completedAt,
+		errors: entry.errors,
+		selectedIndex: entry.selectedIndex,
 		undoHistory,
-	});
+	};
 };
 
 const clearSelectedCell = (state: GameState): GameState => {
@@ -282,6 +307,14 @@ const clearSelectedCell = (state: GameState): GameState => {
 		return state;
 	}
 
+	if (
+		selectedCell.value === null &&
+		selectedCell.notes.length === 0 &&
+		!selectedCell.invalid
+	) {
+		return state;
+	}
+
 	const cells = [...state.cells];
 	cells[state.selectedIndex] = {
 		...selectedCell,
@@ -290,8 +323,43 @@ const clearSelectedCell = (state: GameState): GameState => {
 		invalid: false,
 	};
 
-	return { ...state, cells };
+	return {
+		...state,
+		cells,
+		undoHistory: [
+			...state.undoHistory,
+			createUndoEntry(state, [state.selectedIndex]),
+		],
+	};
 };
+
+const createUndoEntry = (state: GameState, indexes: number[]): UndoEntry => {
+	const seen = new Set<number>();
+
+	return {
+		cells: indexes
+			.filter((index) => {
+				if (seen.has(index)) {
+					return false;
+				}
+
+				seen.add(index);
+				return true;
+			})
+			.map((index) => ({
+				index,
+				cell: cloneCell(state.cells[index]),
+			})),
+		completedAt: state.completedAt,
+		errors: state.errors,
+		selectedIndex: state.selectedIndex,
+	};
+};
+
+const cloneCell = (cell: Cell): Cell => ({
+	...cell,
+	notes: [...cell.notes],
+});
 
 const finishIfSolved = (state: GameState): GameState => {
 	const board = state.cells.map((cell) => cell.value);
