@@ -155,7 +155,10 @@
 body {
 	margin: 0;
 	min-width: 320px;
-	min-height: 100vh;
+	min-height: 100dvh;
+	background:
+		linear-gradient(135deg, var(--ambient-a), transparent 38%),
+		linear-gradient(315deg, var(--ambient-b), transparent 32%), var(--app-bg);
 }
 
 button {
@@ -163,17 +166,14 @@ button {
 }
 
 .app-shell {
-	min-height: 100vh;
+	min-height: 100dvh;
 	display: block;
 	padding: var(--space-4);
-	background:
-		linear-gradient(135deg, var(--ambient-a), transparent 38%),
-		linear-gradient(315deg, var(--ambient-b), transparent 32%), var(--app-bg);
 }
 
 .game-stage {
 	width: min(100%, 520px);
-	min-height: calc(100vh - var(--space-6));
+	min-height: calc(100dvh - var(--space-6));
 	margin: 0 auto;
 	display: flex;
 	flex-direction: column;
@@ -216,10 +216,8 @@ button {
 	height: 32px;
 	display: grid;
 	place-items: center;
-	border: 1px solid color-mix(in srgb, var(--accent) 45%, var(--border));
 	border-radius: var(--radius);
 	color: var(--accent);
-	background: color-mix(in srgb, var(--accent) 10%, var(--surface-raised));
 	animation: pulse-status 2.4s ease-in-out infinite;
 }
 
@@ -538,6 +536,10 @@ legend {
 
 .board.empty-display-dots .cell:nth-child(3n) {
 	border-right: 3px solid var(--grid-line);
+}
+
+.board.empty-display-dots .cell:nth-child(9n) {
+	border-right: 0;
 }
 
 .board.empty-display-dots .cell:nth-child(n + 19):nth-child(-n + 27),
