@@ -22,9 +22,9 @@ import type {
 } from "./types";
 
 const difficultyLabels: Record<Difficulty, string> = {
-	easy: "Easy",
-	medium: "Medium",
-	hard: "Hard",
+	easy: "Chill",
+	medium: "Steady",
+	hard: "Sharp",
 	master: "Master",
 	expert: "Expert",
 };
