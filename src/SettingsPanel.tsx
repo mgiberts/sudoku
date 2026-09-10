@@ -186,15 +186,6 @@ export const SettingsPanel = ({
 					</button>
 				))}
 			</fieldset>
-			<div className="settings-footer">
-				<a
-					href="https://github.com/mgiberts/sudoku"
-					rel="noreferrer"
-					target="_blank"
-				>
-					GitHub
-				</a>
-			</div>
 		</ModalPanel>
 	) : null;
 };

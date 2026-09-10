@@ -4,7 +4,7 @@ A client-only Sudoku game built for quick, focused play in the browser.
 
 ## Play
 
-Visit and play here: https://mgiberts.github.io/sudoku/
+Run locally with `bun install` and `bun run dev`.
 
 | | | |
 |---|---|---|
@@ -13,6 +13,7 @@ Visit and play here: https://mgiberts.github.io/sudoku/
 ## Documentation
 
 - [Architecture](docs/ARCHITECTURE.md)
+- [Deployment](docs/DEPLOYMENT.md)
 
 ## Stack
 
