@@ -10,6 +10,7 @@
 	"files": {
 		"includes": [
 			"src/**",
+			"scripts/release*.ts",
 			"index.html",
 			"package.json",
 			"tsconfig.json",

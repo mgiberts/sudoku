@@ -9,6 +9,7 @@ import {
 	Timer,
 	TimerOff,
 } from "lucide-react";
+import { appVersion } from "./appVersion";
 import { ModalPanel } from "./ModalPanel";
 import { useSettings } from "./SettingsContext";
 import { symbolSetLabels, symbolSetOptions } from "./symbolSets";
@@ -186,6 +187,7 @@ export const SettingsPanel = ({
 					</button>
 				))}
 			</fieldset>
+			<footer className="settings-footer">{appVersion}</footer>
 		</ModalPanel>
 	) : null;
 };

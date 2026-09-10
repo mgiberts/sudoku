@@ -5,6 +5,49 @@ The GitHub Actions workflow deploys after updates to `main`, including merged pu
 requests. Pull requests run verification and the build without deploying. A manual
 `workflow_dispatch` deploys only when run on `main`.
 
+## Versions and GitHub releases
+
+Every successful deployment of a new commit on `main` creates a `vX.Y.Z` Git tag
+on that exact commit and publishes a GitHub Release with generated notes. The
+first release is **v1.0.0**. Direct pushes follow the same rules as merged PRs.
+The settings footer shows the version embedded in the deployed build.
+
+Tags are the source of truth for release versions. `package.json` stays at the
+initial `1.0.0` baseline; CI does not push version-bump commits. Local and PR
+builds display `v1.0.0-dev`. CI supplies `VITE_APP_VERSION` without the `v` prefix
+to build the production version.
+
+Subsequent releases inspect commit messages since the previous release:
+
+| Message | Bump | Example from v1.2.3 |
+| --- | --- | --- |
+| `feat: ...` or `feat(settings): ...` | Minor | v1.3.0 |
+| `feat!: ...`, `fix(storage)!: ...`, or a `BREAKING CHANGE:` / `BREAKING-CHANGE:` line | Major | v2.0.0 |
+| `[release:minor]` / `[release:major]` anywhere in the message | Minor / major | v1.3.0 / v2.0.0 |
+| Everything else, including `fix:`, `ci:`, `docs:`, or ordinary text | Patch | v1.2.4 |
+
+The highest detected bump wins. Put the prefix in the PR title and preserve it
+in the merge or squash commit message. Individual commits count when their
+history is retained; text discarded by squash merging does not count. No PR
+label lookup or Conventional Commits enforcement is required.
+
+Production workflows queue without canceling an active deployment. Verification
+must pass before the version is resolved and the release build is deployed. Only
+after Wrangler succeeds are the tag and release published. The production job
+uses the built-in GitHub token with `contents: write` and `actions: read`; PR
+verification retains read-only access. Repository rules must permit this workflow
+to create `v*` tags.
+
+The resolved commit, version, and previous tag are saved as a workflow artifact
+before deployment (retained for 90 days). Rerunning a failed workflow restores
+that metadata, reuses matching tags/releases, and can finish an interrupted
+publication. A failed verification or deployment publishes nothing. If GitHub
+publication fails after deployment, the site already runs the resolved version;
+rerun the failed job to finish publishing it. Conflicting tags and deployments
+older than the latest release fail instead of overwriting releases or rolling
+the site back. A manual run on an already released commit redeploys the same
+version; an unreleased commit gets the next version.
+
 ## GitHub configuration
 
 Configure these under repository Settings → Secrets and variables → Actions:

@@ -402,6 +402,14 @@ legend {
 	animation: settings-slide-down 160ms ease-out;
 }
 
+.settings-footer {
+	/* border-top: 1px solid var(--border-strong); */
+	padding-top: var(--space-3);
+	color: var(--text-muted);
+	font-size: 0.75rem;
+	text-align: right;
+}
+
 .settings-header {
 	display: flex;
 	align-items: center;

@@ -24,14 +24,14 @@ Run locally with `bun install` and `bun run dev`.
 
 ## Roadmap
 
-### 1. Become an offline page
+### 1. [Become an offline page](https://github.com/mgiberts/sudoku/issues/4)
 
 - Add a web app manifest with app name, theme color, and icons.
 - Add a small service worker that caches the built HTML, CSS, JavaScript, and static assets.
 - Show a stable fallback experience when the user opens the page without network access.
 - Test installability and offline loading in Chrome DevTools.
 
-### 2. Game history and seed sharing
+### 2. [Game history and seed sharing](https://github.com/mgiberts/sudoku/issues/5)
 
 - Add a history panel that shows the player's most recent games.
 - Let players replay a game from their history.
