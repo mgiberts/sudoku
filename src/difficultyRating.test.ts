@@ -43,10 +43,13 @@ describe("logical rating", () => {
 		m[1] = mask(1, 3);
 		expect(findDeduction(m, "hard")).toBeNull();
 	});
-	it("replays every catalog trace against its independent unique solution", () => {
+	// Keep CI bounded as catalogs grow; exhaustive checks run via validate:games:expert.
+	it("replays one trace per difficulty against its stored solution", () => {
 		for (const game of [
-			...curatedExpertGames,
-			...Object.values(starterPuzzlesByDifficulty).flat(),
+			curatedExpertGames[0],
+			...Object.values(starterPuzzlesByDifficulty).flatMap((games) =>
+				games.slice(0, 1),
+			),
 		]) {
 			const rating = rateDifficulty(game.puzzle);
 			const m = candidateMasks(game.puzzle);
