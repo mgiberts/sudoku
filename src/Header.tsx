@@ -1,4 +1,4 @@
-import { Bubbles, Settings, Star } from "lucide-react";
+import { Bubbles, Crown, Settings } from "lucide-react";
 import { ElapsedTime } from "./ElapsedTime";
 import { useSettings } from "./SettingsContext";
 import { difficultyLabels } from "./SettingsPanel";
@@ -6,7 +6,7 @@ import { Stat } from "./Stat";
 import { useGame } from "./SudokuContext";
 
 const settingsIcon = <Settings size={19} />;
-const bestTimesIcon = <Star size={19} />;
+const bestTimesIcon = <Crown size={19} />;
 const workerIcon = <Bubbles size={18} />;
 
 export const Header = ({
