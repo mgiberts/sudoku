@@ -1,20 +1,24 @@
-import { mkdir, rename, writeFile } from "node:fs/promises";
+import { mkdir, readFile, rename, writeFile } from "node:fs/promises";
 import { dirname, resolve } from "node:path";
+import { difficultyPolicy } from "../src/difficultyPolicy";
 import {
-	compactGameDataV1,
-	createGameDataV1,
-	difficultyThresholds,
 	type CompactSudokuGameDataV1,
+	compactGameDataV1,
 	type SudokuGameDataV1,
 	validateGameDataV1,
 } from "../src/gameData";
-import { createSeed, createUniquePuzzle } from "../src/sudoku";
+import {
+	addSample,
+	emptyMetrics,
+	summarizeMetrics,
+} from "../src/generationMetrics";
+import { generateRatedGame } from "../src/puzzleGeneration";
 import type { Difficulty } from "../src/types";
 
 type StarterDifficulty = Exclude<Difficulty, "expert">;
 
 type Options = {
-	count: number;
+	count: number | null;
 	output: string;
 	timeoutMs: number;
 	maxTotalAttempts: number;
@@ -38,74 +42,83 @@ const gamesByDifficulty: Record<StarterDifficulty, SudokuGameDataV1[]> = {
 	master: [],
 };
 
+const requestedCount = (difficulty: StarterDifficulty) =>
+	options.count ?? difficultyPolicy.levels[difficulty].starterCount;
+const metrics = emptyMetrics();
+const progressPath = `${options.output}.progress.json`;
+try {
+	const saved = JSON.parse(await readFile(progressPath, "utf8"));
+	if (saved.count === options.count && saved.timeoutMs === options.timeoutMs) {
+		for (const difficulty of STARTER_DIFFICULTIES)
+			gamesByDifficulty[difficulty] = (saved.games[difficulty] ?? [])
+				.filter(
+					(game: SudokuGameDataV1) =>
+						validateGameDataV1(game, { requireUnique: true }).length === 0,
+				)
+				.slice(0, requestedCount(difficulty));
+		Object.assign(metrics, saved.metrics ?? emptyMetrics());
+	}
+} catch {
+	/* No usable checkpoint. */
+}
 for (const difficulty of STARTER_DIFFICULTIES) {
-	const acceptedIds = new Set<string>();
-	let attempts = 0;
-
-	while (
-		gamesByDifficulty[difficulty].length < options.count &&
-		attempts < options.maxTotalAttempts
+	const games = gamesByDifficulty[difficulty];
+	for (
+		let attempt = 0;
+		games.length < requestedCount(difficulty) &&
+		attempt < options.maxTotalAttempts;
+		attempt++
 	) {
-		attempts += 1;
-		const startedAt = performance.now();
-		const seed = createSeed();
-		const puzzleResult = createUniquePuzzle(difficulty, seed, {
-			strategy: "greedy",
-			targetClues: difficultyThresholds[difficulty].targetClues,
+		const { game, metrics: sample } = generateRatedGame(difficulty, {
+			runtime: "bun",
 			timeoutMs: options.timeoutMs,
 		});
-		const durationMs = Math.round(performance.now() - startedAt);
-
-		if (!puzzleResult) {
-			logProgress(
-				difficulty,
-				gamesByDifficulty[difficulty].length,
-				attempts,
-				durationMs,
-				durationMs >= options.timeoutMs ? "timeout" : "miss",
-			);
-			continue;
+		if (game && games.some((g) => g.id === game.id)) {
+			sample.accepted = false;
+			sample.rejections.duplicate = 1;
+		} else if (game) {
+			game.source = "starter";
+			games.push(game);
 		}
-
-		const game = createGameDataV1({
+		addSample(metrics, sample);
+		await writeTextAtomically(
+			progressPath,
+			JSON.stringify({
+				count: options.count,
+				timeoutMs: options.timeoutMs,
+				games: gamesByDifficulty,
+				metrics,
+			}),
+		);
+		await writeTextAtomically(
+			`${options.output}.metrics.json`,
+			JSON.stringify(summarizeMetrics(metrics), null, 2),
+		);
+		logProgress(
 			difficulty,
-			generatedAt: new Date().toISOString(),
-			generator: {
-				name: GENERATOR_NAME,
-				version: GENERATOR_VERSION,
-				runtime: "bun",
-				durationMs,
-				attempts,
-			},
-			puzzle: puzzleResult.puzzle,
-			seed: puzzleResult.seed,
-			solution: puzzleResult.solution,
-			source: "starter",
-		});
-		const errors = validateGameDataV1(game, { requireUnique: true });
-
-		if (errors.length > 0 || acceptedIds.has(game.id)) {
-			logProgress(difficulty, gamesByDifficulty[difficulty].length, attempts, durationMs, "reject");
-			continue;
-		}
-
-		gamesByDifficulty[difficulty].push(game);
-		acceptedIds.add(game.id);
-		logProgress(difficulty, gamesByDifficulty[difficulty].length, attempts, durationMs, "accept");
-	}
-
-	if (gamesByDifficulty[difficulty].length < options.count) {
-		throw new Error(
-			`Stopped after ${attempts} attempts with ${gamesByDifficulty[difficulty].length}/${options.count} accepted ${difficulty} starter games.`,
+			games.length,
+			attempt + 1,
+			sample.durationMs,
+			sample.accepted ? "accept" : "reject",
 		);
 	}
+	if (games.length < requestedCount(difficulty))
+		throw new Error(
+			`Incomplete ${difficulty} pool. Progress saved; catalog unchanged.`,
+		);
 }
+console.log(JSON.stringify(summarizeMetrics(metrics), null, 2));
 
-await writeTextAtomically(options.output, formatStarterModule(gamesByDifficulty));
+await writeTextAtomically(
+	options.output,
+	formatStarterModule(gamesByDifficulty),
+);
 
 function parseArgs(args: string[]): Options {
 	return {
-		count: Number(readOption(args, "--count", "3")),
+		count: args.includes("--count")
+			? Number(readOption(args, "--count", "3"))
+			: null,
 		output: readOption(args, "--output", DEFAULT_OUTPUT),
 		timeoutMs: Number(readOption(args, "--timeout-ms", "10000")),
 		maxTotalAttempts: Number(readOption(args, "--max-total-attempts", "100")),
@@ -128,7 +141,10 @@ function readOption(args: string[], name: string, fallback: string): string {
 	return value;
 }
 
-async function writeTextAtomically(path: string, content: string): Promise<void> {
+async function writeTextAtomically(
+	path: string,
+	content: string,
+): Promise<void> {
 	const absolutePath = resolve(path);
 	const tmpPath = `${absolutePath}.tmp`;
 	await mkdir(dirname(absolutePath), { recursive: true });

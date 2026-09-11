@@ -1,5 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
+import { difficultyPolicy } from "./difficultyPolicy";
 import type { SudokuGameDataV1 } from "./gameData";
+import { recordGeneration, recordGenerationEvent } from "./generationMetrics";
 import type {
 	PuzzleWorkerRequest,
 	PuzzleWorkerResponse,
@@ -13,7 +15,8 @@ const NORMAL_DIFFICULTIES: WorkerDifficulty[] = [
 	"hard",
 	"master",
 ];
-const QUEUE_TARGET = 1;
+const queueTarget = (difficulty: WorkerDifficulty) =>
+	difficultyPolicy.levels[difficulty].cacheCapacity;
 const MIN_WORKER_STATUS_MS = 4800;
 
 export const usePuzzleQueue = () => {
@@ -109,7 +112,7 @@ export const usePuzzleQueue = () => {
 	const fillQueue = useCallback(
 		(difficulty: WorkerDifficulty) => {
 			if (
-				queuesRef.current[difficulty].length >= QUEUE_TARGET ||
+				queuesRef.current[difficulty].length >= queueTarget(difficulty) ||
 				pendingRef.current.has(difficulty)
 			) {
 				return;
@@ -132,10 +135,11 @@ export const usePuzzleQueue = () => {
 	const consumeQueuedGame = useCallback(
 		(difficulty: WorkerDifficulty): SudokuGameDataV1 | null => {
 			const game = queuesRef.current[difficulty].shift() ?? null;
+			recordGenerationEvent(difficulty, game ? "cache-hit" : "cache-miss");
 			sudokuStorage.saveGeneratedGameCache(
 				difficulty,
 				queuesRef.current[difficulty],
-				QUEUE_TARGET,
+				queueTarget(difficulty),
 			);
 			fillQueue(difficulty);
 			return game;
@@ -146,12 +150,16 @@ export const usePuzzleQueue = () => {
 	const requestQueuedGame = useCallback(
 		(difficulty: WorkerDifficulty): Promise<SudokuGameDataV1 | null> => {
 			const queuedGame = queuesRef.current[difficulty].shift() ?? null;
+			recordGenerationEvent(
+				difficulty,
+				queuedGame ? "cache-hit" : "cache-miss",
+			);
 
 			if (queuedGame) {
 				sudokuStorage.saveGeneratedGameCache(
 					difficulty,
 					queuesRef.current[difficulty],
-					QUEUE_TARGET,
+					queueTarget(difficulty),
 				);
 				fillQueue(difficulty);
 				return Promise.resolve(queuedGame);
@@ -162,7 +170,16 @@ export const usePuzzleQueue = () => {
 			}
 
 			return new Promise((resolve) => {
-				waitersRef.current[difficulty].push(resolve);
+				const started = performance.now();
+				recordGenerationEvent(difficulty, "wait-count");
+				waitersRef.current[difficulty].push((game) => {
+					recordGenerationEvent(
+						difficulty,
+						"wait-ms",
+						performance.now() - started,
+					);
+					resolve(game);
+				});
 				requestGeneration(difficulty);
 			});
 		},
@@ -181,6 +198,7 @@ export const usePuzzleQueue = () => {
 
 		worker.onmessage = (event: MessageEvent<PuzzleWorkerResponse>) => {
 			const message = event.data;
+			if ("metrics" in message) recordGeneration(message.metrics);
 
 			if (message.type === "generated") {
 				pendingRef.current.delete(message.difficulty);
@@ -193,11 +211,11 @@ export const usePuzzleQueue = () => {
 					queuesRef.current[message.difficulty] = [
 						...queuesRef.current[message.difficulty],
 						message.game,
-					].slice(0, QUEUE_TARGET);
+					].slice(0, queueTarget(message.difficulty));
 					sudokuStorage.saveGeneratedGameCache(
 						message.difficulty,
 						queuesRef.current[message.difficulty],
-						QUEUE_TARGET,
+						queueTarget(message.difficulty),
 					);
 				}
 
@@ -205,7 +223,11 @@ export const usePuzzleQueue = () => {
 				return;
 			}
 
-			if (message.type === "timeout" || message.type === "error") {
+			if (
+				message.type === "timeout" ||
+				message.type === "rejected" ||
+				message.type === "error"
+			) {
 				if (message.difficulty) {
 					pendingRef.current.delete(message.difficulty);
 					updateWorkingState();
@@ -214,6 +236,16 @@ export const usePuzzleQueue = () => {
 			}
 		};
 
+		worker.onerror = () => {
+			worker.terminate();
+			workerRef.current = null;
+			for (const difficulty of pendingRef.current) {
+				recordGenerationEvent(difficulty, "worker-error");
+				resolveWaiters(difficulty, null);
+			}
+			pendingRef.current.clear();
+			updateWorkingState();
+		};
 		warmQueue();
 
 		return () => {

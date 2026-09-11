@@ -1,5 +1,7 @@
 import { mkdir, writeFile } from "node:fs/promises";
 import { dirname } from "node:path";
+import { boardToCompactString } from "../src/gameData";
+import { curatedExpertGames } from "../src/generated/curatedExpert.v1";
 
 const SAMPLE_INPUT = "/tmp/sudoku-curated-import-sample.txt";
 
@@ -7,8 +9,8 @@ await mkdir(dirname(SAMPLE_INPUT), { recursive: true });
 await writeFile(
 	SAMPLE_INPUT,
 	[
-		"# Known uniquely solvable 17-clue Sudoku sample.",
-		"000000010400000000020000000000050407008000300001090000300400200050100000000806000",
+		"# Uniquely solvable Expert fixture under the current rating policy.",
+		boardToCompactString(curatedExpertGames[0].puzzle),
 		"",
 	].join("\n"),
 );

@@ -10,6 +10,7 @@ import { useEffect, useRef, useState } from "react";
 import { BestTimesPanel } from "./BestTimesPanel";
 import { Board } from "./Board";
 import { Controls } from "./Controls";
+import { requiresRating } from "./difficultyRating";
 import { formatDuration } from "./formatDuration";
 import { GameDialog } from "./GameDialog";
 import { selectCuratedExpertGame, selectStarterGame } from "./gameCatalog";
@@ -38,6 +39,7 @@ const SudokuApp = () => {
 	const { settings, updateDifficulty } = useSettings();
 	const { consumeQueuedGame, isWorking, requestQueuedGame, warmQueue } =
 		usePuzzleQueue();
+	const [generationError, setGenerationError] = useState<string | null>(null);
 	const loadingRequestRef = useRef<symbol | null>(null);
 	const [bestTimes, setBestTimes] = useState<BestTimes>(() =>
 		sudokuStorage.loadBestTimes(),
@@ -97,6 +99,7 @@ const SudokuApp = () => {
 			return;
 		}
 
+		setGenerationError(null);
 		const game =
 			difficulty === "expert"
 				? selectCuratedExpertGame()
@@ -108,7 +111,9 @@ const SudokuApp = () => {
 		}
 
 		if (difficulty === "expert") {
-			dispatch({ type: "new-game", difficulty });
+			setGenerationError(
+				"No validated Expert puzzle is available. Please try again later.",
+			);
 			return;
 		}
 
@@ -124,6 +129,10 @@ const SudokuApp = () => {
 
 		if (queuedGame) {
 			dispatch({ type: "new-game-data", game: queuedGame });
+		} else if (requiresRating(difficulty)) {
+			setGenerationError(
+				`No validated ${difficultyLabels[difficulty]} puzzle is available. Please try again later.`,
+			);
 		} else {
 			dispatch({ type: "new-game", difficulty });
 		}
@@ -149,6 +158,7 @@ const SudokuApp = () => {
 
 	return (
 		<main className="app-shell">
+			{generationError && <p role="alert">{generationError}</p>}
 			<section className="game-stage" aria-label="Sudoku game">
 				<Header
 					bestTimesOpen={bestTimesOpen}

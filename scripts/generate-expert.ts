@@ -1,19 +1,29 @@
 import { mkdir, readFile, rename, writeFile } from "node:fs/promises";
 import { dirname, resolve } from "node:path";
+import { difficultyPolicy } from "../src/difficultyPolicy";
+import { rateDifficulty, requiresRating } from "../src/difficultyRating";
 import {
-	compactGameDataV1,
 	type CompactSudokuGameDataV1,
+	compactGameDataV1,
 	createGameDataV1,
 	difficultyThresholds,
 	expandGameDataV1,
 	type SudokuGameDataV1,
 	validateGameDataV1,
 } from "../src/gameData";
+import {
+	addSample,
+	emptyMetrics,
+	type Metrics,
+	newSample,
+	summarizeMetrics,
+} from "../src/generationMetrics";
 import { createSeed, createUniquePuzzle } from "../src/sudoku";
 import type { Difficulty } from "../src/types";
 import { formatCuratedExpertModule } from "./game-data-module";
 
 type ProgressFile = {
+	metrics: Metrics;
 	version: 1;
 	difficulty: Difficulty;
 	target: number;
@@ -65,7 +75,7 @@ type Options = {
 };
 
 const GENERATOR_NAME = "curated-expert-generator";
-const GENERATOR_VERSION = "0.1.0";
+const GENERATOR_VERSION = "0.2.0";
 const DEFAULT_OUTPUT = "src/generated/curatedExpert.v1.ts";
 const DEFAULT_PROGRESS = "scripts/output/curatedExpert.progress.json";
 
@@ -90,18 +100,30 @@ while (
 	progress.attempts += 1;
 	const startedAt = performance.now();
 	const seed = createSeed();
+	const sample = newSample(options.difficulty, "bun", options.strategy);
+	sample.attempts = 1;
+	const finishSample = (reason?: string) => {
+		sample.durationMs = performance.now() - startedAt;
+		sample.accepted = !reason;
+		if (reason) sample.rejections[reason] = 1;
+		addSample(progress.metrics, sample);
+	};
+	const shouldStop = () =>
+		stopRequested || performance.now() - startedAt >= options.timeoutMs;
 	const puzzleResult = createUniquePuzzle(options.difficulty, seed, {
 		maxClues: options.maxClues,
 		maxSearchNodes: options.maxSearchNodes,
 		minClues: options.minClues,
-		shouldStop: () => stopRequested,
+		shouldStop,
 		strategy: options.strategy,
 		targetClues: options.targetClues,
 		timeoutMs: options.timeoutMs,
 	});
-	const durationMs = Math.round(performance.now() - startedAt);
+	let durationMs = performance.now() - startedAt;
+	sample.generationMs = durationMs;
 
 	if (!puzzleResult) {
+		finishSample(shouldStop() ? "generation-deadline" : "clue-mismatch");
 		if (durationMs >= options.timeoutMs) {
 			progress.timeouts += 1;
 		} else {
@@ -128,7 +150,44 @@ while (
 		solution: puzzleResult.solution,
 		source: options.source,
 	});
-	const errors = validateGameDataV1(game, { requireUnique: true });
+	let phase = performance.now();
+	if (requiresRating(game.difficulty))
+		game.rating = rateDifficulty(game.puzzle, shouldStop);
+	sample.ratingMs = performance.now() - phase;
+	phase = performance.now();
+	const errors = validateGameDataV1(game, {
+		requireUnique: true,
+		requireDifficulty: difficultyPolicy.stage === "reviewed",
+		shouldStop,
+	});
+	sample.uniquenessMs = performance.now() - phase;
+	if (
+		game.rating &&
+		game.rating.tier !== difficultyPolicy.levels[game.difficulty].repertoire
+	)
+		errors.push(`rating:${game.rating.tier}`);
+	durationMs = performance.now() - startedAt;
+	if (game.generator) game.generator.durationMs = durationMs;
+	finishSample(
+		shouldStop()
+			? "generation-deadline"
+			: errors.length
+				? game.rating?.status === "budget"
+					? "rating-budget"
+					: game.rating?.tier === "unrated"
+						? "unrated"
+						: game.rating && game.rating.tier !== game.difficulty
+							? ["singles", "hard", "master", "expert"].indexOf(
+									game.rating.tier,
+								) <
+								["singles", "hard", "master", "expert"].indexOf(game.difficulty)
+								? "too-easy"
+								: "beyond-tier"
+							: "invalid"
+				: acceptedIds.has(game.id)
+					? "duplicate"
+					: undefined,
+	);
 
 	if (durationMs >= options.timeoutMs) {
 		progress.timeouts += 1;
@@ -163,7 +222,9 @@ if (progress.accepted.length < options.target) {
 	);
 }
 
-console.info(`Done. Accepted ${progress.accepted.length}/${options.target} ${options.difficulty} games.`);
+console.info(
+	`Done. Accepted ${progress.accepted.length}/${options.target} ${options.difficulty} games.`,
+);
 
 function parseArgs(args: string[]): Options {
 	const difficulty = readOption(args, "--difficulty", "expert") as Difficulty;
@@ -176,7 +237,13 @@ function parseArgs(args: string[]): Options {
 
 	const targetClues = Number(
 		readOptionalOption(args, "--target-clues") ??
-			String(acceptClueRange ? threshold.minClues : threshold.maxClues),
+			String(
+				difficultyPolicy.stage === "reviewed"
+					? threshold.targetClues
+					: acceptClueRange
+						? threshold.minClues
+						: threshold.maxClues,
+			),
 	);
 
 	return {
@@ -187,9 +254,7 @@ function parseArgs(args: string[]): Options {
 			readOptionalOption(args, "--max-clues") ??
 				String(acceptClueRange ? threshold.maxClues : targetClues),
 		),
-		maxSearchNodes: Number(
-			readOption(args, "--max-search-nodes", "20000"),
-		),
+		maxSearchNodes: Number(readOption(args, "--max-search-nodes", "20000")),
 		maxTotalAttempts: Number(
 			readOption(args, "--max-total-attempts", String(Number.MAX_SAFE_INTEGER)),
 		),
@@ -207,7 +272,11 @@ function parseArgs(args: string[]): Options {
 		persistEvery: Number(readOption(args, "--persist-every", "25")),
 		progress: readOption(args, "--progress", DEFAULT_PROGRESS),
 		resetProgress: args.includes("--reset-progress"),
-		source: readOption(args, "--source", "curated") as SudokuGameDataV1["source"],
+		source: readOption(
+			args,
+			"--source",
+			"curated",
+		) as SudokuGameDataV1["source"],
 	};
 }
 
@@ -264,10 +333,21 @@ async function loadProgress(options: Options): Promise<ProgressFile> {
 
 	return {
 		...progress,
+		metrics: progress.metrics ?? emptyMetrics(),
 		config: createProgressConfig(options),
 		difficulty: options.difficulty,
 		target: options.target,
-		accepted: dedupeGames(progress.accepted.map(expandProgressGame)),
+		accepted: dedupeGames(progress.accepted.map(expandProgressGame))
+			.filter(
+				(game) =>
+					validateGameDataV1(game, { requireUnique: true }).length === 0,
+			)
+			.map((game) => ({
+				...game,
+				rating: requiresRating(game.difficulty)
+					? rateDifficulty(game.puzzle)
+					: undefined,
+			})),
 	};
 }
 
@@ -288,13 +368,12 @@ async function readOptionalText(path: string): Promise<string | null> {
 	}
 }
 
-function createEmptyProgress(
-	options: Options,
-): ProgressFile {
+function createEmptyProgress(options: Options): ProgressFile {
 	const now = new Date().toISOString();
 
 	return {
 		version: 1,
+		metrics: emptyMetrics(),
 		difficulty: options.difficulty,
 		target: options.target,
 		config: createProgressConfig(options),
@@ -374,7 +453,15 @@ async function persist(
 	options: Pick<Options, "output" | "progress">,
 ): Promise<void> {
 	await writeJsonAtomically(options.progress, compactProgress(progress));
-	await writeTextAtomically(options.output, formatCuratedExpertModule(progress.accepted));
+	await writeJsonAtomically(
+		`${options.progress}.metrics.json`,
+		summarizeMetrics(progress.metrics),
+	);
+	if (progress.accepted.length >= progress.target)
+		await writeTextAtomically(
+			options.output,
+			formatCuratedExpertModule(progress.accepted),
+		);
 }
 
 async function persistIfDue(
@@ -392,11 +479,17 @@ async function persistIfDue(
 	lastPersistedAttempt = progress.attempts;
 }
 
-async function writeJsonAtomically(path: string, value: unknown): Promise<void> {
+async function writeJsonAtomically(
+	path: string,
+	value: unknown,
+): Promise<void> {
 	await writeTextAtomically(path, `${JSON.stringify(value, null, "\t")}\n`);
 }
 
-async function writeTextAtomically(path: string, content: string): Promise<void> {
+async function writeTextAtomically(
+	path: string,
+	content: string,
+): Promise<void> {
 	const absolutePath = resolve(path);
 	const tmpPath = `${absolutePath}.tmp`;
 	await mkdir(dirname(absolutePath), { recursive: true });

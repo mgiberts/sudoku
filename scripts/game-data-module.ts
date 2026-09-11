@@ -1,6 +1,6 @@
 import {
-	compactGameDataV1,
 	type CompactSudokuGameDataV1,
+	compactGameDataV1,
 	type SudokuGameDataV1,
 } from "../src/gameData";
 
@@ -30,7 +30,7 @@ const formatCompactGames = (games: CompactSudokuGameDataV1[]): string => {
 \t\t\t${JSON.stringify(game.solution)},
 \t\tclues: ${game.clues},
 ${game.seed === undefined ? "" : `\t\tseed: ${game.seed},\n`}\t\tsource: ${JSON.stringify(game.source)},
-${game.generatedAt === undefined ? "" : `\t\tgeneratedAt: ${JSON.stringify(game.generatedAt)},\n`}${formatGenerator(game.generator)}\t\tid: ${JSON.stringify(game.id)},
+${game.generatedAt === undefined ? "" : `\t\tgeneratedAt: ${JSON.stringify(game.generatedAt)},\n`}${game.assessment === undefined ? "" : `\t\tassessment: ${JSON.stringify(game.assessment)},\n`}${game.rating === undefined ? "" : `\t\trating: ${JSON.stringify(game.rating)},\n`}${formatGenerator(game.generator)}\t\tid: ${JSON.stringify(game.id)},
 \t}`,
 	);
 

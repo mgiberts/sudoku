@@ -1,3 +1,8 @@
+import {
+	rateDifficulty,
+	requiresRating,
+	summarizeRating,
+} from "./difficultyRating";
 import { createGameDataV1, type SudokuGameDataV1 } from "./gameData";
 import { createSeed } from "./sudoku";
 import type { Board, Digit } from "./types";
@@ -18,7 +23,11 @@ export const transformGameDataV1 = (
 	const random = seededRandom(seed);
 	const transform = createBoardTransform(random);
 
+	const puzzle = transformBoard(game.puzzle, transform);
 	return createGameDataV1({
+		rating: requiresRating(game.difficulty)
+			? summarizeRating(rateDifficulty(puzzle))
+			: undefined,
 		difficulty: game.difficulty,
 		generatedAt: new Date().toISOString(),
 		generator: {
@@ -26,7 +35,7 @@ export const transformGameDataV1 = (
 			version: "0.1.0",
 			runtime: "bun",
 		},
-		puzzle: transformBoard(game.puzzle, transform),
+		puzzle,
 		seed,
 		solution: transformBoard(game.solution, transform) as Digit[],
 		source: game.source,

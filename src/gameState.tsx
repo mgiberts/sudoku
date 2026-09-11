@@ -1,3 +1,4 @@
+import { requiresRating } from "./difficultyRating";
 import type { SudokuGameDataV1 } from "./gameData";
 import { gameDataToInitialState } from "./gameData";
 import {
@@ -79,6 +80,8 @@ export const gameReducer = (
 };
 
 export const createInitialGame = (difficulty: Difficulty): GameState => {
+	if (requiresRating(difficulty))
+		throw new Error("Games require validated game data");
 	const { puzzle, solution, seed } = createPuzzle(difficulty);
 
 	return {

@@ -1,7 +1,6 @@
 import { afterEach, describe, expect, it } from "vitest";
-import { createGameDataV1 } from "./gameData";
+import { starterPuzzlesByDifficulty } from "./generated/starterPuzzles";
 import { sudokuStorage } from "./storage";
-import { createPuzzle } from "./sudoku";
 import type { Digit } from "./types";
 
 describe("sudoku storage", () => {
@@ -168,14 +167,7 @@ describe("sudoku storage", () => {
 	});
 
 	it("stores generated game cache in compact form", () => {
-		const { puzzle, solution, seed } = createPuzzle("easy", 12345);
-		const game = createGameDataV1({
-			difficulty: "easy",
-			puzzle,
-			seed,
-			solution,
-			source: "worker",
-		});
+		const game = starterPuzzlesByDifficulty.easy[0];
 
 		sudokuStorage.saveGeneratedGameCache("easy", [game]);
 

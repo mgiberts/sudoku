@@ -1,4 +1,5 @@
 import type { SudokuGameDataV1 } from "./gameData";
+import type { GenerationSample } from "./generationMetrics";
 import type { Difficulty } from "./types";
 
 export type WorkerDifficulty = Exclude<Difficulty, "expert">;
@@ -17,12 +18,14 @@ export type PuzzleWorkerRequest =
 export type PuzzleWorkerResponse =
 	| {
 			type: "generated";
+			metrics: GenerationSample;
 			requestId: string;
 			difficulty: WorkerDifficulty;
 			game: SudokuGameDataV1;
 	  }
 	| {
-			type: "timeout";
+			type: "timeout" | "rejected";
+			metrics: GenerationSample;
 			requestId: string;
 			difficulty: WorkerDifficulty;
 			durationMs: number;

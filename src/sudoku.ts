@@ -217,7 +217,12 @@ export const hasUniqueSolutionWithin = (
 	board: Board,
 	shouldStop: () => boolean,
 ): boolean => {
-	return countSolutions([...board], 2, shouldStop) === 1;
+	let interrupted = false;
+	const count = countSolutions([...board], 2, () => {
+		interrupted ||= shouldStop();
+		return interrupted;
+	});
+	return !interrupted && count === 1;
 };
 
 export const getSolutionCount = (board: Board, limit = 2): number => {
@@ -1132,4 +1137,41 @@ const seededRandom = (seed: number): (() => number) => {
 		value = (value * 16807) % 2147483647;
 		return (value - 1) / 2147483646;
 	};
+};
+
+/** Offline neighborhood search: replace a given with clues that rule out
+ * concrete alternative solutions, then minimize again. No symmetry copies. */
+export const tradePuzzleClues = (
+	puzzle: Board,
+	solution: Digit[],
+	seed = createSeed(),
+	shouldStop: () => boolean = () => false,
+): Board => {
+	const random = seededRandom(seed);
+	const candidate = [...puzzle];
+	const givens = candidate.flatMap((v, c) => (v === null ? [] : [c]));
+	const removed = givens[Math.floor(random() * givens.length)];
+	candidate[removed] = null;
+	for (let additions = 0; additions < 5 && !shouldStop(); additions++) {
+		const alternative = findAlternativeSolution(
+			candidate,
+			solution,
+			random,
+			shouldStop,
+		);
+		if (!alternative)
+			return minimizeUniquePuzzle(
+				candidate,
+				difficultyConfig.expert,
+				random,
+				shouldStop,
+			);
+		const choices = solution.flatMap((v, c) =>
+			c !== removed && candidate[c] === null && alternative[c] !== v ? [c] : [],
+		);
+		if (!choices.length) return [...puzzle];
+		const cell = choices[Math.floor(random() * choices.length)];
+		candidate[cell] = solution[cell];
+	}
+	return candidate;
 };

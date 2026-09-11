@@ -1,7 +1,10 @@
+import { difficultyPolicy } from "./difficultyPolicy";
+import { matchesDifficulty, requiresRating } from "./difficultyRating";
 import {
 	type CompactSudokuGameDataV1,
 	compactGameDataV1,
 	expandGameDataV1,
+	hasCurrentAssessment,
 	type SudokuGameDataV1,
 } from "./gameData";
 import type {
@@ -188,13 +191,21 @@ const createSudokuStorage = () => {
 		const cache = loadGeneratedGameCacheRecord();
 		const games = cache[difficulty] ?? [];
 
-		return games.map(expandGameDataV1);
+		return games
+			.map(expandGameDataV1)
+			.filter(
+				(game) =>
+					game.difficulty === difficulty &&
+					hasCurrentAssessment(game) &&
+					(!requiresRating(difficulty) ||
+						(game.rating && matchesDifficulty(difficulty, game.rating))),
+			);
 	};
 
 	const saveGeneratedGameCache = (
 		difficulty: Difficulty,
 		games: SudokuGameDataV1[],
-		limit = 1,
+		limit = difficultyPolicy.levels[difficulty].cacheCapacity,
 	): void => {
 		const cache = loadGeneratedGameCacheRecord();
 		const deduped = dedupeGamesById(games)

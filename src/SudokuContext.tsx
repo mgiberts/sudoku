@@ -6,6 +6,7 @@ import {
 	useMemo,
 	useReducer,
 } from "react";
+import { requiresRating } from "./difficultyRating";
 import { selectCuratedExpertGame, selectStarterGame } from "./gameCatalog";
 import { gameDataToInitialState } from "./gameData";
 import type { GameAction } from "./gameState";
@@ -59,5 +60,7 @@ export const createInitialGameForDifficulty = (
 			? selectCuratedExpertGame()
 			: selectStarterGame(difficulty);
 
+	if (!game && requiresRating(difficulty))
+		throw new Error(`No validated ${difficulty} puzzle is available`);
 	return game ? gameDataToInitialState(game) : createInitialGame(difficulty);
 };

@@ -1,4 +1,27 @@
-import { hasSolution, hasUniqueSolution, isValidSolvedBoard } from "./sudoku";
+import {
+	assertReviewedPolicy,
+	type DifficultyPolicy,
+	difficultyPolicy,
+} from "./difficultyPolicy";
+import {
+	matchesDifficulty,
+	RATING_VERSION,
+	type RatingSummary,
+	rateDifficulty,
+	requiresRating,
+	summarizeRating,
+} from "./difficultyRating";
+import {
+	assessEffort,
+	type EffortAssessment,
+	effortRejection,
+} from "./effortRating";
+import {
+	hasSolution,
+	hasUniqueSolution,
+	hasUniqueSolutionWithin,
+	isValidSolvedBoard,
+} from "./sudoku";
 import type { Board, Difficulty, Digit, GameState } from "./types";
 
 export const GAME_DATA_VERSION = 1;
@@ -6,6 +29,7 @@ export const GAME_DATA_VERSION = 1;
 export type GameDataSource = "starter" | "worker" | "curated" | "script";
 export type GameDataRuntime =
 	| "browser-worker"
+	| "browser-simulation"
 	| "bun"
 	| "node"
 	| "native"
@@ -21,6 +45,8 @@ export type SudokuGameDataV1 = {
 	seed?: number;
 	source: GameDataSource;
 	generatedAt?: string;
+	rating?: RatingSummary;
+	assessment?: EffortAssessment;
 	generator?: {
 		name: string;
 		version: string;
@@ -45,23 +71,17 @@ export type DifficultyThreshold = {
 	maxGenerationMs: number;
 };
 
-export const difficultyThresholds: Record<Difficulty, DifficultyThreshold> = {
-	easy: { targetClues: 42, minClues: 40, maxClues: 44, maxGenerationMs: 250 },
-	medium: { targetClues: 34, minClues: 32, maxClues: 36, maxGenerationMs: 500 },
-	hard: { targetClues: 26, minClues: 25, maxClues: 28, maxGenerationMs: 1500 },
-	master: {
-		targetClues: 24,
-		minClues: 23,
-		maxClues: 25,
-		maxGenerationMs: 3000,
-	},
-	expert: {
-		targetClues: 18,
-		minClues: 17,
-		maxClues: 20,
-		maxGenerationMs: 300000,
-	},
-};
+export const difficultyThresholds = Object.fromEntries(
+	Object.entries(difficultyPolicy.levels).map(([difficulty, config]) => [
+		difficulty,
+		{
+			targetClues: config.targetClues,
+			minClues: 17,
+			maxClues: 81,
+			maxGenerationMs: config.maxGenerationMs,
+		},
+	]),
+) as Record<Difficulty, DifficultyThreshold>;
 
 export const createGameDataV1 = ({
 	difficulty,
@@ -71,6 +91,8 @@ export const createGameDataV1 = ({
 	seed,
 	solution,
 	source,
+	rating,
+	assessment,
 }: Omit<SudokuGameDataV1, "clues" | "id" | "version">): SudokuGameDataV1 => {
 	const clues = countClues(puzzle);
 	const gameWithoutId: Omit<SudokuGameDataV1, "id"> = {
@@ -83,6 +105,12 @@ export const createGameDataV1 = ({
 		source,
 		generatedAt,
 		generator,
+		assessment:
+			assessment ??
+			(difficultyPolicy.stage === "reviewed"
+				? assessEffort(puzzle).assessment
+				: undefined),
+		rating: rating ? summarizeRating(rating) : undefined,
 	};
 
 	return {
@@ -93,9 +121,17 @@ export const createGameDataV1 = ({
 
 export const validateGameDataV1 = (
 	game: SudokuGameDataV1,
-	options: { requireUnique?: boolean } = {},
+	options: {
+		policy?: DifficultyPolicy;
+		requireUnique?: boolean;
+		requireDifficulty?: boolean;
+		shouldStop?: () => boolean;
+	} = {},
 ): string[] => {
 	const errors: string[] = [];
+	const policy = options.policy ?? difficultyPolicy;
+	const useEffort = options.policy !== undefined || policy.stage === "reviewed";
+	if (!options.policy && useEffort) assertReviewedPolicy(policy);
 	const threshold = difficultyThresholds[game.difficulty];
 
 	if (game.version !== GAME_DATA_VERSION) {
@@ -114,6 +150,8 @@ export const validateGameDataV1 = (
 		errors.push("Solution must contain 81 cells");
 	}
 
+	if (errors.length > 0) return errors;
+
 	if (game.puzzle.some((value) => value !== null && !isDigit(value))) {
 		errors.push("Puzzle contains an invalid cell value");
 	}
@@ -131,6 +169,7 @@ export const validateGameDataV1 = (
 	}
 
 	if (
+		!useEffort &&
 		threshold &&
 		(game.clues < threshold.minClues || game.clues > threshold.maxClues)
 	) {
@@ -147,11 +186,16 @@ export const validateGameDataV1 = (
 		errors.push("Puzzle givens do not match solution");
 	}
 
-	if (!hasSolution(game.puzzle)) {
+	if (!options.shouldStop && !hasSolution(game.puzzle)) {
 		errors.push("Puzzle has no solution");
 	}
 
-	if (options.requireUnique && !hasUniqueSolution(game.puzzle)) {
+	if (
+		options.requireUnique &&
+		!(options.shouldStop
+			? hasUniqueSolutionWithin(game.puzzle, options.shouldStop)
+			: hasUniqueSolution(game.puzzle))
+	) {
 		errors.push("Puzzle does not have exactly one solution");
 	}
 
@@ -159,6 +203,46 @@ export const validateGameDataV1 = (
 		errors.push("Game id does not match puzzle hash");
 	}
 
+	if (errors.length === 0 && useEffort && options.requireDifficulty !== false) {
+		const { assessment, rating } = assessEffort(
+			game.puzzle,
+			options.shouldStop,
+			policy.version,
+		);
+		const reason = effortRejection(game.difficulty, assessment, policy);
+		if (reason) errors.push(`Difficulty policy: ${reason}`);
+		if (
+			game.rating &&
+			(game.rating.version !== rating.version ||
+				game.rating.tier !== rating.tier ||
+				game.rating.status !== rating.status)
+		)
+			errors.push("Rating metadata does not match recomputed difficulty");
+		if (
+			game.assessment &&
+			(game.assessment.policyVersion !== policy.version ||
+				game.assessment.ratingVersion !== assessment.ratingVersion ||
+				game.assessment.repertoire !== assessment.repertoire)
+		)
+			errors.push("Stale difficulty assessment");
+	} else if (
+		errors.length === 0 &&
+		options.requireDifficulty !== false &&
+		requiresRating(game.difficulty)
+	) {
+		const rating = rateDifficulty(game.puzzle, options.shouldStop);
+		if (
+			game.rating &&
+			(game.rating.version !== rating.version ||
+				game.rating.tier !== rating.tier ||
+				game.rating.status !== rating.status)
+		)
+			errors.push("Rating metadata does not match recomputed difficulty");
+		if (!matchesDifficulty(game.difficulty, rating))
+			errors.push(
+				`Difficulty mismatch: expected ${game.difficulty}, rated ${rating.tier} (${rating.status})`,
+			);
+	}
 	return errors;
 };
 
@@ -191,6 +275,7 @@ export const compactGameDataV1 = (
 	game: SudokuGameDataV1,
 ): CompactSudokuGameDataV1 => ({
 	...game,
+	rating: game.rating ? summarizeRating(game.rating) : undefined,
 	puzzle: boardToCompactString(game.puzzle),
 	solution: digitsToCompactString(game.solution),
 });
@@ -277,3 +362,11 @@ const numericSeedFromId = (id: string): number => {
 
 	return seed;
 };
+
+export const hasCurrentAssessment = (game: SudokuGameDataV1): boolean =>
+	difficultyPolicy.stage !== "reviewed" ||
+	Boolean(
+		game.assessment &&
+			game.assessment.ratingVersion === RATING_VERSION &&
+			!effortRejection(game.difficulty, game.assessment),
+	);
