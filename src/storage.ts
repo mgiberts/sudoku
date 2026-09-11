@@ -10,6 +10,7 @@ import type {
 	Difficulty,
 	EmptyCellDisplay,
 	GameState,
+	HighlightMode,
 	InputStyle,
 	NumberColorScheme,
 	PlayMode,
@@ -30,6 +31,7 @@ const DEFAULT_DIFFICULTY: Difficulty = "easy";
 const DEFAULT_SETTINGS: SettingsState = {
 	difficulty: DEFAULT_DIFFICULTY,
 	emptyCellDisplay: "clean",
+	highlightMode: "default",
 	inputStyle: "single",
 	numberColorScheme: "color",
 	playMode: "timer",
@@ -44,6 +46,7 @@ const DIFFICULTIES = new Set<Difficulty>([
 	"expert",
 ]);
 const EMPTY_CELL_DISPLAYS = new Set<EmptyCellDisplay>(["clean", "dots"]);
+const HIGHLIGHT_MODES = new Set<HighlightMode>(["default", "minimal", "off"]);
 const INPUT_STYLES = new Set<InputStyle>(["single", "flow"]);
 const NUMBER_COLOR_SCHEMES = new Set<NumberColorScheme>([
 	"color",
@@ -123,6 +126,9 @@ const createSudokuStorage = () => {
 					DEFAULT_SETTINGS.emptyCellDisplay,
 				inputStyle:
 					normalizeInputStyle(parsed.inputStyle) ?? DEFAULT_SETTINGS.inputStyle,
+				highlightMode:
+					normalizeHighlightMode(parsed.highlightMode) ??
+					DEFAULT_SETTINGS.highlightMode,
 				numberColorScheme:
 					normalizeNumberColorScheme(parsed.numberColorScheme) ??
 					DEFAULT_SETTINGS.numberColorScheme,
@@ -453,6 +459,14 @@ const normalizeInputStyle = (inputStyle?: string): InputStyle | null => {
 	return INPUT_STYLES.has(inputStyle as InputStyle)
 		? (inputStyle as InputStyle)
 		: null;
+};
+
+const normalizeHighlightMode = (
+	highlightMode?: string,
+): HighlightMode | undefined => {
+	return HIGHLIGHT_MODES.has(highlightMode as HighlightMode)
+		? (highlightMode as HighlightMode)
+		: undefined;
 };
 
 const normalizeEmptyCellDisplay = (

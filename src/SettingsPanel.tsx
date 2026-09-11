@@ -1,9 +1,11 @@
 import {
 	CircleDot,
+	Cross,
 	Grid3X3,
 	Locate,
 	LocateFixed,
 	Moon,
+	Square,
 	Sun,
 	SunMoon,
 	Timer,
@@ -16,6 +18,7 @@ import { symbolSetLabels, symbolSetOptions } from "./symbolSets";
 import type {
 	Difficulty,
 	EmptyCellDisplay,
+	HighlightMode,
 	InputStyle,
 	NumberColorScheme,
 	PlayMode,
@@ -36,6 +39,15 @@ const inputStyleLabels: Record<InputStyle, string> = {
 	flow: "Flow",
 };
 const inputStyleOptions = Object.keys(inputStyleLabels) as InputStyle[];
+
+const highlightModeLabels: Record<HighlightMode, string> = {
+	default: "Area",
+	minimal: "Cross",
+	off: "Off",
+};
+const highlightModeOptions = Object.keys(
+	highlightModeLabels,
+) as HighlightMode[];
 
 const playModeLabels: Record<PlayMode, string> = {
 	timer: "Timer",
@@ -78,6 +90,7 @@ export const SettingsPanel = ({
 	const {
 		settings,
 		updateEmptyCellDisplay,
+		updateHighlightMode,
 		updateInputStyle,
 		updateNumberColorScheme,
 		updatePlayMode,
@@ -184,6 +197,23 @@ export const SettingsPanel = ({
 						{option === "clean" && <Grid3X3 size={14} />}
 						{option === "dots" && <CircleDot size={14} />}
 						{emptyCellDisplayLabels[option]}
+					</button>
+				))}
+			</fieldset>
+			<fieldset className="segmented settings-control">
+				<legend>Selection highlighting</legend>
+				{highlightModeOptions.map((option) => (
+					<button
+						aria-pressed={option === settings.highlightMode}
+						className={option === settings.highlightMode ? "active" : ""}
+						key={option}
+						onClick={() => updateHighlightMode(option)}
+						type="button"
+					>
+						{option === "default" && <Grid3X3 size={14} aria-hidden="true" />}
+						{option === "minimal" && <Cross size={14} aria-hidden="true" />}
+						{option === "off" && <Square size={14} aria-hidden="true" />}
+						{highlightModeLabels[option]}
 					</button>
 				))}
 			</fieldset>

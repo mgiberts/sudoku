@@ -4,7 +4,13 @@ import { useGame } from "./SudokuContext";
 export const Board = () => {
 	const { state, dispatch } = useGame();
 	const {
-		settings: { emptyCellDisplay, inputStyle, numberColorScheme, symbolSet },
+		settings: {
+			emptyCellDisplay,
+			highlightMode,
+			inputStyle,
+			numberColorScheme,
+			symbolSet,
+		},
 		symbols,
 		digits,
 		numberClasses,
@@ -27,11 +33,13 @@ export const Board = () => {
 				const row = Math.floor(index / 9);
 				const col = index % 9;
 				const sameUnit =
+					highlightMode !== "off" &&
 					selectedRow !== null &&
 					selectedCol !== null &&
 					(row === selectedRow ||
 						col === selectedCol ||
-						(Math.floor(row / 3) === Math.floor(selectedRow / 3) &&
+						(highlightMode === "default" &&
+							Math.floor(row / 3) === Math.floor(selectedRow / 3) &&
 							Math.floor(col / 3) === Math.floor(selectedCol / 3)));
 				const matchingValue =
 					cell.value !== null &&

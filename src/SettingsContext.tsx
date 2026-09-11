@@ -12,6 +12,7 @@ import type {
 	Difficulty,
 	Digit,
 	EmptyCellDisplay,
+	HighlightMode,
 	InputStyle,
 	NumberColorScheme,
 	PlayMode,
@@ -38,6 +39,7 @@ type SettingsContextValue = {
 	symbols: Record<Digit, string>;
 	updateDifficulty: (difficulty: Difficulty) => void;
 	updateEmptyCellDisplay: (emptyCellDisplay: EmptyCellDisplay) => void;
+	updateHighlightMode: (highlightMode: HighlightMode) => void;
 	updateInputStyle: (inputStyle: InputStyle) => void;
 	updateNumberColorScheme: (numberColorScheme: NumberColorScheme) => void;
 	updatePlayMode: (playMode: PlayMode) => void;
@@ -75,6 +77,10 @@ export const SettingsProvider = ({ children }: { children: ReactNode }) => {
 			setSettings((current) => ({ ...current, inputStyle }));
 		};
 
+		const updateHighlightMode = (highlightMode: HighlightMode) => {
+			setSettings((current) => ({ ...current, highlightMode }));
+		};
+
 		const updateSymbolSet = (symbolSet: SymbolSet) => {
 			setSettings((current) => ({ ...current, symbolSet }));
 		};
@@ -96,6 +102,7 @@ export const SettingsProvider = ({ children }: { children: ReactNode }) => {
 			symbols: symbolSets[settings.symbolSet],
 			updateDifficulty,
 			updateEmptyCellDisplay,
+			updateHighlightMode,
 			updateInputStyle,
 			updateNumberColorScheme,
 			updatePlayMode,

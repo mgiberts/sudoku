@@ -6,6 +6,7 @@ export type ThemeSetting = "light" | "dark" | "auto";
 export type SymbolSet = "digits" | "kanji" | "emoji";
 export type NumberColorScheme = "color" | "monochrome";
 export type InputStyle = "single" | "flow";
+export type HighlightMode = "default" | "minimal" | "off";
 export type EmptyCellDisplay = "clean" | "dots";
 export type PlayMode = "timer" | "zen";
 
@@ -19,6 +20,7 @@ export type BestTimes = Partial<Record<Difficulty, BestTime>>;
 export type SettingsState = {
 	difficulty: Difficulty;
 	emptyCellDisplay: EmptyCellDisplay;
+	highlightMode: HighlightMode;
 	inputStyle: InputStyle;
 	numberColorScheme: NumberColorScheme;
 	playMode: PlayMode;
