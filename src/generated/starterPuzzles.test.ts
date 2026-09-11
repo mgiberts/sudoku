@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { difficultyPolicy } from "../difficultyPolicy";
 import { validateGameDataV1 } from "../gameData";
 import type { Difficulty } from "../types";
 import { curatedExpertGames } from "./curatedExpert.v1";
@@ -7,11 +8,13 @@ import { starterPuzzlesByDifficulty } from "./starterPuzzles";
 const STARTER_DIFFICULTIES: Difficulty[] = ["easy", "medium", "hard", "master"];
 
 describe("starter puzzles", () => {
-	it("ships three validated unique games for each normal difficulty", () => {
+	it("ships the configured number of validated unique games for each normal difficulty", () => {
 		for (const difficulty of STARTER_DIFFICULTIES) {
 			const games = starterPuzzlesByDifficulty[difficulty];
 
-			expect(games).toHaveLength(3);
+			expect(games).toHaveLength(
+				difficultyPolicy.levels[difficulty].starterCount,
+			);
 
 			for (const game of games) {
 				expect(game.difficulty).toBe(difficulty);
@@ -24,8 +27,10 @@ describe("starter puzzles", () => {
 		expect(starterPuzzlesByDifficulty.expert).toEqual([]);
 	});
 
-	it("ships temporary validated curated Expert mock games", () => {
-		expect(curatedExpertGames.length).toBeGreaterThanOrEqual(3);
+	it("ships the configured number of validated curated Experts", () => {
+		expect(curatedExpertGames).toHaveLength(
+			difficultyPolicy.levels.expert.starterCount,
+		);
 
 		for (const game of curatedExpertGames) {
 			expect(game.difficulty).toBe("expert");

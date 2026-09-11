@@ -8,9 +8,14 @@ describe("Sudoku context initial game", () => {
 		localStorage.clear();
 	});
 
-	it("uses starter game data for normal first-load games", () => {
-		const state = createInitialGameForDifficulty("easy");
-		const starterPuzzles = starterPuzzlesByDifficulty.easy.map((game) =>
+	it.each([
+		"easy",
+		"medium",
+		"hard",
+		"master",
+	] as const)("uses reviewed starter data for %s first-load games", (difficulty) => {
+		const state = createInitialGameForDifficulty(difficulty);
+		const starterPuzzles = starterPuzzlesByDifficulty[difficulty].map((game) =>
 			game.puzzle.join(","),
 		);
 

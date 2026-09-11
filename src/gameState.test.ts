@@ -1,12 +1,12 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { createGameDataV1 } from "./gameData";
+import { createGameDataV1, gameDataToInitialState } from "./gameData";
 import {
-	createInitialGame,
 	gameReducer,
 	getElapsedSeconds,
 	hasPlayerProgress,
 	isDigitComplete,
 } from "./gameState";
+import { starterPuzzlesByDifficulty } from "./generated/starterPuzzles";
 import type { Digit, GameState } from "./types";
 
 const createTestState = (overrides: Partial<GameState> = {}): GameState => {
@@ -45,7 +45,9 @@ describe("game state", () => {
 	});
 
 	it("starts without a selected cell", () => {
-		expect(createInitialGame("easy").selectedIndex).toBeNull();
+		expect(
+			gameDataToInitialState(starterPuzzlesByDifficulty.easy[0]).selectedIndex,
+		).toBeNull();
 	});
 
 	it("ignores digit entry before a cell is selected", () => {
@@ -333,7 +335,10 @@ describe("game state", () => {
 			errors: 2,
 			completedAt: Date.now(),
 		};
-		const next = gameReducer(state, { type: "new-game", difficulty: "easy" });
+		const next = gameReducer(state, {
+			type: "new-game-data",
+			game: starterPuzzlesByDifficulty.easy[0],
+		});
 
 		expect(next.seed).not.toBe(state.seed);
 		expect(next.cells).not.toEqual(state.cells);

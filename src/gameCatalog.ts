@@ -1,6 +1,7 @@
-import type { SudokuGameDataV1 } from "./gameData";
+import { hasCurrentAssessment, type SudokuGameDataV1 } from "./gameData";
 import { curatedExpertGames } from "./generated/curatedExpert.v1";
 import { starterPuzzlesByDifficulty } from "./generated/starterPuzzles";
+import { recordGenerationEvent } from "./generationMetrics";
 import { sudokuStorage } from "./storage";
 import type { Difficulty } from "./types";
 
@@ -22,11 +23,12 @@ export const selectStarterGame = (
 	}
 
 	const starterGame = pickGameAvoidingRecent(
-		starterPuzzlesByDifficulty[difficulty],
+		starterPuzzlesByDifficulty[difficulty].filter(hasCurrentAssessment),
 		sudokuStorage.loadRecentGameIds(difficulty),
 	);
 
 	if (starterGame) {
+		recordGenerationEvent(difficulty, "starter-fallback");
 		sudokuStorage.recordRecentGameId(
 			difficulty,
 			starterGame.id,
@@ -39,7 +41,7 @@ export const selectStarterGame = (
 
 export const selectCuratedExpertGame = (): SudokuGameDataV1 | null => {
 	const game = pickGameAvoidingRecent(
-		curatedExpertGames,
+		curatedExpertGames.filter(hasCurrentAssessment),
 		sudokuStorage.loadRecentGameIds("expert"),
 	);
 

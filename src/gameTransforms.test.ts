@@ -24,12 +24,16 @@ describe("game transforms", () => {
 			solution,
 			source: "curated",
 		});
+		// This low-clue fixture is singles-solvable; this test checks symmetry, not its old label.
 		const transformed = transformGameDataV1(game, 12345);
 
 		expect(transformed.id).not.toBe(game.id);
 		expect(transformed.clues).toBe(game.clues);
-		expect(validateGameDataV1(transformed, { requireUnique: true })).toEqual(
-			[],
-		);
+		expect(
+			validateGameDataV1(transformed, {
+				requireUnique: true,
+				requireDifficulty: false,
+			}),
+		).toEqual([]);
 	});
 });

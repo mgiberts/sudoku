@@ -1,19 +1,15 @@
+import { difficultyPolicy } from "../src/difficultyPolicy";
+import type { SudokuGameDataV1 } from "../src/gameData";
+import { validateGameDataV1 } from "../src/gameData";
 import { curatedExpertGames } from "../src/generated/curatedExpert.v1";
 import { starterPuzzlesByDifficulty } from "../src/generated/starterPuzzles";
-import { validateGameDataV1 } from "../src/gameData";
-import type { SudokuGameDataV1 } from "../src/gameData";
 import type { Difficulty } from "../src/types";
 
 type Options = {
 	requireExpertCount: number | null;
 };
 
-const STARTER_DIFFICULTIES: Difficulty[] = [
-	"easy",
-	"medium",
-	"hard",
-	"master",
-];
+const STARTER_DIFFICULTIES: Difficulty[] = ["easy", "medium", "hard", "master"];
 
 const options = parseArgs(process.argv.slice(2));
 const errors: string[] = [];
@@ -24,8 +20,10 @@ let curatedExpertRealCount = 0;
 for (const difficulty of STARTER_DIFFICULTIES) {
 	const games = starterPuzzlesByDifficulty[difficulty];
 
-	if (games.length !== 3) {
-		errors.push(`${difficulty} starter count is ${games.length}, expected 3`);
+	if (games.length !== difficultyPolicy.levels[difficulty].starterCount) {
+		errors.push(
+			`${difficulty} starter count is ${games.length}, expected ${difficultyPolicy.levels[difficulty].starterCount}`,
+		);
 	}
 
 	for (const game of games) {
@@ -44,7 +42,9 @@ for (const game of curatedExpertGames) {
 		curatedExpertMockCount += 1;
 
 		if (options.requireExpertCount !== null) {
-			errors.push(`${game.id}: mock curated Expert game cannot satisfy final Expert count`);
+			errors.push(
+				`${game.id}: mock curated Expert game cannot satisfy final Expert count`,
+			);
 		}
 	} else {
 		curatedExpertRealCount += 1;
@@ -68,7 +68,8 @@ if (errors.length > 0) {
 console.info(
 	[
 		`starter=${STARTER_DIFFICULTIES.reduce(
-			(count, difficulty) => count + starterPuzzlesByDifficulty[difficulty].length,
+			(count, difficulty) =>
+				count + starterPuzzlesByDifficulty[difficulty].length,
 			0,
 		)}`,
 		`curatedExpert=${curatedExpertGames.length}`,
@@ -78,10 +79,7 @@ console.info(
 	].join(" "),
 );
 
-function validateGame(
-	game: SudokuGameDataV1,
-	expectedSource: string,
-): void {
+function validateGame(game: SudokuGameDataV1, expectedSource: string): void {
 	const validationErrors = validateGameDataV1(game, { requireUnique: true });
 
 	if (validationErrors.length > 0) {
@@ -89,7 +87,9 @@ function validateGame(
 	}
 
 	if (game.source !== expectedSource) {
-		errors.push(`${game.id}: source is ${game.source}, expected ${expectedSource}`);
+		errors.push(
+			`${game.id}: source is ${game.source}, expected ${expectedSource}`,
+		);
 	}
 
 	if (seenIds.has(game.id)) {

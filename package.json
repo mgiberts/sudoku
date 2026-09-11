@@ -29,7 +29,13 @@
 		"transform:expert": "bun scripts/transform-curated-expert.ts",
 		"typecheck": "tsc --noEmit",
 		"validate:games": "bun scripts/validate-game-data.ts",
-		"validate:games:expert": "bun scripts/validate-game-data.ts --require-expert-count 100"
+		"validate:games:expert": "bun scripts/validate-game-data.ts --require-expert-count 100",
+		"generate:rated-catalogs": "bun scripts/regenerate-rated-catalogs.ts",
+		"calibrate:difficulty": "bun scripts/calibrate-difficulty.ts",
+		"playtest:build": "bun scripts/build-difficulty-playtest.ts && bun scripts/build-phone-check.ts && bun scripts/package-difficulty-calibration.ts",
+		"benchmark:difficulty": "node scripts/benchmark-difficulty.mjs && CALIBRATION_EXECUTION=worker node scripts/benchmark-difficulty.mjs",
+		"benchmark:difficulty:report": "bun scripts/report-difficulty-benchmark.ts",
+		"publish:reviewed-catalogs": "bun scripts/publish-reviewed-catalogs.ts"
 	},
 	"dependencies": {
 		"lucide-react": "^0.493.0",

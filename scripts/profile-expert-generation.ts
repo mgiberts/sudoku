@@ -1,3 +1,8 @@
+import {
+	matchesDifficulty,
+	rateDifficulty,
+	requiresRating,
+} from "../src/difficultyRating";
 import { difficultyThresholds } from "../src/gameData";
 import { createSeed, createUniquePuzzleCandidate } from "../src/sudoku";
 import type { Difficulty } from "../src/types";
@@ -23,21 +28,39 @@ let maxObserved = 0;
 const startedAt = performance.now();
 
 for (let attempt = 1; attempt <= options.attempts; attempt += 1) {
-	const candidate = createUniquePuzzleCandidate(options.difficulty, createSeed(), {
-		maxClues: options.maxClues,
-		maxSearchNodes: options.maxSearchNodes,
-		minClues: options.minClues,
-		strategy: options.strategy,
-		targetClues: options.targetClues,
-		timeoutMs: options.timeoutMs,
-	});
+	const requestStart = performance.now();
+	const shouldStop = () =>
+		performance.now() - requestStart >= options.timeoutMs;
+	const candidate = createUniquePuzzleCandidate(
+		options.difficulty,
+		createSeed(),
+		{
+			shouldStop,
+			maxClues: options.maxClues,
+			maxSearchNodes: options.maxSearchNodes,
+			minClues: options.minClues,
+			strategy: options.strategy,
+			targetClues: options.targetClues,
+			timeoutMs: options.timeoutMs,
+		},
+	);
 
 	if (!candidate) {
 		nullResults += 1;
 		continue;
 	}
 
-	accepted += candidate.accepted ? 1 : 0;
+	const rating =
+		candidate.accepted && requiresRating(options.difficulty)
+			? rateDifficulty(candidate.puzzle, shouldStop)
+			: null;
+	accepted +=
+		candidate.accepted &&
+		!shouldStop() &&
+		(!requiresRating(options.difficulty) ||
+			(rating && matchesDifficulty(options.difficulty, rating)))
+			? 1
+			: 0;
 	minObserved = Math.min(minObserved, candidate.clues);
 	maxObserved = Math.max(maxObserved, candidate.clues);
 	histogram.set(candidate.clues, (histogram.get(candidate.clues) ?? 0) + 1);
@@ -56,6 +79,7 @@ console.info(
 		`observedMin=${Number.isFinite(minObserved) ? minObserved : "none"}`,
 		`observedMax=${maxObserved || "none"}`,
 		`durationMs=${Math.round(performance.now() - startedAt)}`,
+		`costPerAcceptedMs=${accepted ? (performance.now() - startedAt) / accepted : "none"}`,
 	].join(" "),
 );
 

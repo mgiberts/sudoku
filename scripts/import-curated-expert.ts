@@ -1,12 +1,13 @@
 import { mkdir, readFile, rename, writeFile } from "node:fs/promises";
 import { dirname, resolve } from "node:path";
-import { curatedExpertGames } from "../src/generated/curatedExpert.v1";
+import { rateDifficulty, requiresRating } from "../src/difficultyRating";
 import {
 	compactStringToBoard,
 	createGameDataV1,
 	type SudokuGameDataV1,
 	validateGameDataV1,
 } from "../src/gameData";
+import { curatedExpertGames } from "../src/generated/curatedExpert.v1";
 import { solveUniqueBoard } from "../src/sudoku";
 import { formatCuratedExpertModule } from "./game-data-module";
 
@@ -28,6 +29,7 @@ const DEFAULT_OUTPUT = "src/generated/curatedExpert.v1.ts";
 const GENERATOR_NAME = "curated-expert-importer";
 const GENERATOR_VERSION = "0.1.0";
 
+const validationStartedAt = performance.now();
 const options = parseArgs(process.argv.slice(2));
 const puzzles = await readPuzzleStrings(options.input);
 const games: SudokuGameDataV1[] = [];
@@ -99,6 +101,8 @@ console.info(
 		`duplicateInput=${duplicateInputCount}`,
 		`duplicateGame=${duplicateGameCount}`,
 		`dryRun=${options.dryRun}`,
+		`validationMs=${Math.round(performance.now() - validationStartedAt)}`,
+		"originalGenerationMs=unknown",
 	].join(" "),
 );
 
@@ -121,6 +125,8 @@ function parseArgs(args: string[]): Options {
 }
 
 function addGame(game: SudokuGameDataV1): boolean {
+	if (requiresRating(game.difficulty))
+		game.rating = rateDifficulty(game.puzzle);
 	const errors = validateGameDataV1(game, { requireUnique: true });
 
 	if (errors.length > 0) {
@@ -204,7 +210,10 @@ async function readPuzzleStrings(path: string): Promise<PuzzleLine[]> {
 		});
 }
 
-async function writeTextAtomically(path: string, content: string): Promise<void> {
+async function writeTextAtomically(
+	path: string,
+	content: string,
+): Promise<void> {
 	const absolutePath = resolve(path);
 	const tmpPath = `${absolutePath}.tmp`;
 	await mkdir(dirname(absolutePath), { recursive: true });
