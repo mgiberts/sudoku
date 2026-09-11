@@ -93,7 +93,7 @@ export const Board = () => {
 									<span
 										className={`note symbol-${symbolSet} ${
 											numberClasses[digit - 1]
-										}`}
+										} ${cell.notes.includes(digit) && digit === activeDigit ? "matching-value" : ""}`}
 										key={digit}
 									>
 										{cell.notes.includes(digit) ? symbols[digit] : ""}

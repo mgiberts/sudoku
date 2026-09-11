@@ -647,6 +647,14 @@ legend {
 	font-size: clamp(0.48rem, 2vw, 0.82rem);
 }
 
+.note.matching-value {
+	border-radius: 2px;
+	background: var(--cell-matching);
+	box-shadow: 0 0 0 2px var(--cell-matching);
+	outline: 1px solid var(--accent);
+	outline-offset: 2px;
+}
+
 .keypad {
 	display: grid;
 	grid-template-columns: repeat(9, 1fr);
