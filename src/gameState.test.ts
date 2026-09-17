@@ -289,6 +289,13 @@ describe("game state", () => {
 		expect(getElapsedSeconds(resumed, 35_000)).toBe(13);
 	});
 
+	it("uses the supplied timestamp for a persisted pause", () => {
+		const state = createTestState({ startedAt: 4_000 });
+		const paused = gameReducer(state, { type: "pause", at: 10_000 });
+		expect(paused.pausedAt).toBe(10_000);
+		expect(paused.elapsedBeforePause).toBe(6_000);
+	});
+
 	it("ignores game input while paused", () => {
 		const state = createTestState({ pausedAt: Date.now() });
 
