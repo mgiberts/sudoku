@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { difficultyPolicy } from "./difficultyPolicy";
+import { difficultyPolicy, GENERATION_DEADLINE_MS } from "./difficultyPolicy";
 import type { SudokuGameDataV1 } from "./gameData";
+import { hasCurrentAssessment } from "./gameData";
+import { starterPuzzlesByDifficulty } from "./generated/starterPuzzles";
 import { recordGeneration, recordGenerationEvent } from "./generationMetrics";
 import type {
 	PuzzleWorkerRequest,
@@ -8,28 +10,66 @@ import type {
 	WorkerDifficulty,
 } from "./puzzleWorkerMessages";
 import { sudokuStorage } from "./storage";
+import type { Difficulty } from "./types";
 
-const NORMAL_DIFFICULTIES: WorkerDifficulty[] = [
+const DIFFICULTIES: WorkerDifficulty[] = [
 	"easy",
 	"medium",
 	"hard",
 	"master",
+	"expert",
 ];
 const queueTarget = (difficulty: WorkerDifficulty) =>
 	difficultyPolicy.levels[difficulty].cacheCapacity;
 const MIN_WORKER_STATUS_MS = 4800;
+const WORKER_HARD_STOP_MS = GENERATION_DEADLINE_MS + 2_000;
+const RETRY_DELAY_MS = 1_000;
+const LEGACY_EXPERT_RESERVE_KEY = "sudoku.expert.reserve.initialized.v1";
 
-export const usePuzzleQueue = () => {
+const loadStarterQueue = (difficulty: WorkerDifficulty): SudokuGameDataV1[] => {
+	const saved = sudokuStorage.loadGeneratedGameCache(difficulty);
+	const initializedKey = `sudoku.${difficulty}.starters.initialized.v1`;
+	if (
+		localStorage.getItem(initializedKey) ||
+		(difficulty === "expert" && localStorage.getItem(LEGACY_EXPERT_RESERVE_KEY))
+	)
+		return saved;
+	const seen = new Set([
+		...sudokuStorage.loadRecentGameIds(difficulty),
+		...saved.map((game) => game.id),
+	]);
+	const games = [
+		...saved,
+		...starterPuzzlesByDifficulty[difficulty].filter(
+			(game) => hasCurrentAssessment(game) && !seen.has(game.id),
+		),
+	].slice(0, queueTarget(difficulty));
+	sudokuStorage.saveGeneratedGameCache(
+		difficulty,
+		games,
+		queueTarget(difficulty),
+	);
+	localStorage.setItem(initializedKey, "1");
+	return games;
+};
+
+const loadQueues = (): Record<WorkerDifficulty, SudokuGameDataV1[]> =>
+	Object.fromEntries(
+		DIFFICULTIES.map((difficulty) => [
+			difficulty,
+			loadStarterQueue(difficulty),
+		]),
+	) as Record<WorkerDifficulty, SudokuGameDataV1[]>;
+
+export const usePuzzleQueue = (activeDifficulty: Difficulty = "easy") => {
 	const [isWorking, setIsWorking] = useState(false);
 	const statusStartedAtRef = useRef(0);
 	const statusTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 	const workerRef = useRef<Worker | null>(null);
-	const queuesRef = useRef<Record<WorkerDifficulty, SudokuGameDataV1[]>>({
-		easy: sudokuStorage.loadGeneratedGameCache("easy"),
-		medium: sudokuStorage.loadGeneratedGameCache("medium"),
-		hard: sudokuStorage.loadGeneratedGameCache("hard"),
-		master: sudokuStorage.loadGeneratedGameCache("master"),
-	});
+	const workerTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+	const workerHardStopRef = useRef<(() => void) | null>(null);
+	const [initialQueues] = useState(loadQueues);
+	const queuesRef = useRef(initialQueues);
 	const waitersRef = useRef<
 		Record<WorkerDifficulty, Array<(game: SudokuGameDataV1 | null) => void>>
 	>({
@@ -37,6 +77,7 @@ export const usePuzzleQueue = () => {
 		medium: [],
 		hard: [],
 		master: [],
+		expert: [],
 	});
 	const pendingRef = useRef<Set<WorkerDifficulty>>(new Set());
 
@@ -88,6 +129,7 @@ export const usePuzzleQueue = () => {
 
 	const requestGeneration = useCallback(
 		(difficulty: WorkerDifficulty) => {
+			if (difficulty !== activeDifficulty) return;
 			if (pendingRef.current.has(difficulty)) {
 				return;
 			}
@@ -100,13 +142,17 @@ export const usePuzzleQueue = () => {
 
 			pendingRef.current.add(difficulty);
 			updateWorkingState();
+			const requestId = createRequestId();
+			workerTimerRef.current = setTimeout(() => {
+				workerHardStopRef.current?.();
+			}, WORKER_HARD_STOP_MS);
 			worker.postMessage({
 				type: "generate",
-				requestId: createRequestId(),
+				requestId,
 				difficulty,
 			} satisfies PuzzleWorkerRequest);
 		},
-		[updateWorkingState],
+		[activeDifficulty, updateWorkingState],
 	);
 
 	const fillQueue = useCallback(
@@ -123,19 +169,14 @@ export const usePuzzleQueue = () => {
 		[requestGeneration],
 	);
 
-	const warmQueue = useCallback(
-		(difficulties: readonly WorkerDifficulty[] = NORMAL_DIFFICULTIES) => {
-			for (const difficulty of difficulties) {
-				fillQueue(difficulty);
-			}
-		},
-		[fillQueue],
-	);
-
-	const consumeQueuedGame = useCallback(
-		(difficulty: WorkerDifficulty): SudokuGameDataV1 | null => {
+	const takeQueuedGame = useCallback(
+		(
+			difficulty: WorkerDifficulty,
+			recordCacheEvent: boolean,
+		): SudokuGameDataV1 | null => {
 			const game = queuesRef.current[difficulty].shift() ?? null;
-			recordGenerationEvent(difficulty, game ? "cache-hit" : "cache-miss");
+			if (recordCacheEvent)
+				recordGenerationEvent(difficulty, game ? "cache-hit" : "cache-miss");
 			sudokuStorage.saveGeneratedGameCache(
 				difficulty,
 				queuesRef.current[difficulty],
@@ -145,6 +186,32 @@ export const usePuzzleQueue = () => {
 			return game;
 		},
 		[fillQueue],
+	);
+
+	const consumeQueuedGame = useCallback(
+		(difficulty: WorkerDifficulty) => takeQueuedGame(difficulty, true),
+		[takeQueuedGame],
+	);
+	const reserveQueuedGame = useCallback(
+		(difficulty: WorkerDifficulty) => takeQueuedGame(difficulty, false),
+		[takeQueuedGame],
+	);
+
+	const restoreQueuedGame = useCallback(
+		(difficulty: WorkerDifficulty, game: SudokuGameDataV1) => {
+			queuesRef.current[difficulty] = [
+				game,
+				...queuesRef.current[difficulty].filter(
+					(queued) => queued.id !== game.id,
+				),
+			].slice(0, queueTarget(difficulty));
+			sudokuStorage.saveGeneratedGameCache(
+				difficulty,
+				queuesRef.current[difficulty],
+				queueTarget(difficulty),
+			);
+		},
+		[],
 	);
 
 	const requestQueuedGame = useCallback(
@@ -190,84 +257,133 @@ export const usePuzzleQueue = () => {
 		if (typeof Worker === "undefined") {
 			return;
 		}
+		let disposed = false;
+		let retryTimer: ReturnType<typeof setTimeout> | null = null;
+		const clearWorkerTimer = () => {
+			if (workerTimerRef.current) clearTimeout(workerTimerRef.current);
+			workerTimerRef.current = null;
+		};
+		const retryGeneration = () => {
+			if (
+				disposed ||
+				document.visibilityState === "hidden" ||
+				waitersRef.current[activeDifficulty].length === 0
+			)
+				return;
+			if (retryTimer) clearTimeout(retryTimer);
+			retryTimer = setTimeout(() => {
+				retryTimer = null;
+				fillQueue(activeDifficulty);
+			}, RETRY_DELAY_MS);
+		};
+		const createWorker = () => {
+			const worker = new Worker(new URL("./puzzleWorker.ts", import.meta.url), {
+				type: "module",
+			});
+			workerRef.current = worker;
+			worker.onmessage = (event: MessageEvent<PuzzleWorkerResponse>) => {
+				if (workerRef.current !== worker) return;
+				const message = event.data;
+				if ("metrics" in message) recordGeneration(message.metrics);
+				clearWorkerTimer();
 
-		const worker = new Worker(new URL("./puzzleWorker.ts", import.meta.url), {
-			type: "module",
-		});
-		workerRef.current = worker;
-
-		worker.onmessage = (event: MessageEvent<PuzzleWorkerResponse>) => {
-			const message = event.data;
-			if ("metrics" in message) recordGeneration(message.metrics);
-
-			if (message.type === "generated") {
-				pendingRef.current.delete(message.difficulty);
-				updateWorkingState();
-				const waiter = waitersRef.current[message.difficulty].shift();
-
-				if (waiter) {
-					waiter(message.game);
-				} else {
-					queuesRef.current[message.difficulty] = [
-						...queuesRef.current[message.difficulty],
-						message.game,
-					].slice(0, queueTarget(message.difficulty));
-					sudokuStorage.saveGeneratedGameCache(
-						message.difficulty,
-						queuesRef.current[message.difficulty],
-						queueTarget(message.difficulty),
-					);
+				if (message.type === "generated") {
+					pendingRef.current.delete(message.difficulty);
+					updateWorkingState();
+					const waiter = waitersRef.current[message.difficulty].shift();
+					if (waiter) waiter(message.game);
+					else {
+						queuesRef.current[message.difficulty] = [
+							...queuesRef.current[message.difficulty],
+							message.game,
+						].slice(0, queueTarget(message.difficulty));
+						sudokuStorage.saveGeneratedGameCache(
+							message.difficulty,
+							queuesRef.current[message.difficulty],
+							queueTarget(message.difficulty),
+						);
+					}
+					fillQueue(message.difficulty);
+					return;
 				}
 
-				fillQueue(message.difficulty);
-				return;
-			}
-
-			if (
-				message.type === "timeout" ||
-				message.type === "rejected" ||
-				message.type === "error"
-			) {
 				if (message.difficulty) {
 					pendingRef.current.delete(message.difficulty);
 					updateWorkingState();
-					resolveWaiters(message.difficulty, null);
+					retryGeneration();
 				}
-			}
+			};
+			worker.onerror = () => {
+				if (workerRef.current !== worker) return;
+				worker.terminate();
+				workerRef.current = null;
+				clearWorkerTimer();
+				for (const difficulty of pendingRef.current) {
+					recordGenerationEvent(difficulty, "worker-error");
+				}
+				pendingRef.current.clear();
+				updateWorkingState();
+				if (!disposed) {
+					createWorker();
+					retryGeneration();
+				}
+			};
 		};
-
-		worker.onerror = () => {
-			worker.terminate();
+		createWorker();
+		workerHardStopRef.current = () => {
+			workerRef.current?.terminate();
 			workerRef.current = null;
-			for (const difficulty of pendingRef.current) {
-				recordGenerationEvent(difficulty, "worker-error");
-				resolveWaiters(difficulty, null);
-			}
-			pendingRef.current.clear();
+			clearWorkerTimer();
+			recordGenerationEvent(activeDifficulty, "hard-stop");
+			pendingRef.current.delete(activeDifficulty);
 			updateWorkingState();
+			if (!disposed) {
+				createWorker();
+				retryGeneration();
+			}
 		};
-		warmQueue();
+		fillQueue(activeDifficulty);
+		const onVisibilityChange = () => {
+			if (document.visibilityState === "hidden") {
+				if (retryTimer) clearTimeout(retryTimer);
+				retryTimer = null;
+				workerRef.current?.terminate();
+				workerRef.current = null;
+				clearWorkerTimer();
+				pendingRef.current.delete(activeDifficulty);
+				updateWorkingState();
+			} else if (!workerRef.current) {
+				createWorker();
+				fillQueue(activeDifficulty);
+			}
+		};
+		document.addEventListener("visibilitychange", onVisibilityChange);
 
 		return () => {
-			worker.terminate();
+			disposed = true;
+			document.removeEventListener("visibilitychange", onVisibilityChange);
+			if (retryTimer) clearTimeout(retryTimer);
+			clearWorkerTimer();
+			workerHardStopRef.current = null;
+			workerRef.current?.terminate();
 			workerRef.current = null;
 			pendingRef.current.clear();
+			setIsWorking(false);
 			if (statusTimerRef.current) {
 				clearTimeout(statusTimerRef.current);
 			}
 			statusStartedAtRef.current = 0;
 			statusTimerRef.current = null;
-			for (const difficulty of NORMAL_DIFFICULTIES) {
-				resolveWaiters(difficulty, null);
-			}
+			resolveWaiters(activeDifficulty, null);
 		};
-	}, [fillQueue, resolveWaiters, updateWorkingState, warmQueue]);
+	}, [activeDifficulty, fillQueue, resolveWaiters, updateWorkingState]);
 
 	return {
 		consumeQueuedGame,
 		isWorking,
 		requestQueuedGame,
-		warmQueue,
+		reserveQueuedGame,
+		restoreQueuedGame,
 	};
 };
 

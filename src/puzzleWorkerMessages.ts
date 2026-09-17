@@ -2,18 +2,13 @@ import type { SudokuGameDataV1 } from "./gameData";
 import type { GenerationSample } from "./generationMetrics";
 import type { Difficulty } from "./types";
 
-export type WorkerDifficulty = Exclude<Difficulty, "expert">;
+export type WorkerDifficulty = Difficulty;
 
-export type PuzzleWorkerRequest =
-	| {
-			type: "generate";
-			requestId: string;
-			difficulty: WorkerDifficulty;
-	  }
-	| {
-			type: "warm";
-			difficulties: WorkerDifficulty[];
-	  };
+export type PuzzleWorkerRequest = {
+	type: "generate";
+	requestId: string;
+	difficulty: WorkerDifficulty;
+};
 
 export type PuzzleWorkerResponse =
 	| {

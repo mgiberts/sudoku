@@ -2,6 +2,7 @@ import type { Difficulty } from "./types";
 
 /** Bump when accepting a different effort profile. Independent of solver/generator versions. */
 export const EFFORT_POLICY_VERSION = 2;
+export const GENERATION_DEADLINE_MS = 15_000;
 export type EffortThresholds = {
 	minScore: number;
 	maxScore: number;
@@ -29,9 +30,9 @@ export const difficultyPolicy: DifficultyPolicy = {
 		easy: {
 			repertoire: "singles",
 			targetClues: 42,
-			maxGenerationMs: 250,
+			maxGenerationMs: GENERATION_DEADLINE_MS,
 			starterCount: 3,
-			cacheCapacity: 1,
+			cacheCapacity: 3,
 			effort: {
 				minScore: 0,
 				maxScore: 0.1875041026524401,
@@ -42,9 +43,9 @@ export const difficultyPolicy: DifficultyPolicy = {
 		medium: {
 			repertoire: "singles",
 			targetClues: 34,
-			maxGenerationMs: 500,
+			maxGenerationMs: GENERATION_DEADLINE_MS,
 			starterCount: 3,
-			cacheCapacity: 1,
+			cacheCapacity: 3,
 			effort: {
 				minScore: 0.1875041026524401,
 				maxScore: 1.000001,
@@ -55,9 +56,9 @@ export const difficultyPolicy: DifficultyPolicy = {
 		hard: {
 			repertoire: "hard",
 			targetClues: 26,
-			maxGenerationMs: 1500,
+			maxGenerationMs: GENERATION_DEADLINE_MS,
 			starterCount: 3,
-			cacheCapacity: 1,
+			cacheCapacity: 3,
 			effort: {
 				minScore: 0,
 				maxScore: 9007199254740991,
@@ -68,9 +69,9 @@ export const difficultyPolicy: DifficultyPolicy = {
 		master: {
 			repertoire: "master",
 			targetClues: 24,
-			maxGenerationMs: 3000,
+			maxGenerationMs: GENERATION_DEADLINE_MS,
 			starterCount: 3,
-			cacheCapacity: 1,
+			cacheCapacity: 3,
 			effort: {
 				minScore: 0,
 				maxScore: 9007199254740991,
@@ -81,9 +82,9 @@ export const difficultyPolicy: DifficultyPolicy = {
 		expert: {
 			repertoire: "expert",
 			targetClues: 28,
-			maxGenerationMs: 300000,
-			starterCount: 100,
-			cacheCapacity: 0,
+			maxGenerationMs: GENERATION_DEADLINE_MS,
+			starterCount: 3,
+			cacheCapacity: 3,
 			effort: {
 				minScore: 0,
 				maxScore: 9007199254740991,

@@ -21,7 +21,13 @@ const pauseIcon = <Pause size={19} />;
 const locateIcon = <Locate size={19} />;
 const locateFixedIcon = <LocateFixed size={19} />;
 
-export const Controls = ({ onReset }: { onReset: () => void }) => {
+export const Controls = ({
+	onReset,
+	resetDisabled = false,
+}: {
+	onReset: () => void;
+	resetDisabled?: boolean;
+}) => {
 	const { state, dispatch } = useGame();
 	const { settings, updateInputStyle } = useSettings();
 
@@ -68,6 +74,7 @@ export const Controls = ({ onReset }: { onReset: () => void }) => {
 			</button>
 			<button
 				className="icon-button"
+				disabled={resetDisabled}
 				onClick={onReset}
 				title="Reset"
 				type="button"

@@ -17,7 +17,6 @@ import {
 } from "../src/generationMetrics";
 import { generateRatedGame } from "../src/puzzleGeneration";
 import { hasUniqueSolution, tradePuzzleClues } from "../src/sudoku";
-import { formatCuratedExpertModule } from "./game-data-module";
 
 if (difficultyPolicy.stage === "reviewed")
 	throw new Error(
@@ -175,7 +174,7 @@ if (
 	throw new Error(
 		"Catalog incomplete; resumable progress saved, shipped files unchanged",
 	);
-for (const game of progress.experts) game.source = "curated";
+for (const game of progress.experts) game.source = "starter";
 for (const game of [
 	...Object.values(progress.starters).flat(),
 	...progress.experts,
@@ -189,18 +188,10 @@ const starters = Object.fromEntries(
 		games.map(compactGameDataV1),
 	]),
 );
-const starterText = `import { expandGameDataV1, type CompactSudokuGameDataV1, type SudokuGameDataV1 } from "../gameData";\nimport type { Difficulty } from "../types";\nconst compactStarters = ${JSON.stringify({ ...starters, expert: [] })} satisfies Record<Difficulty, CompactSudokuGameDataV1[]>;\nexport const starterPuzzlesByDifficulty = Object.fromEntries(Object.entries(compactStarters).map(([d,games])=>[d,games.map(expandGameDataV1)])) as Record<Difficulty, SudokuGameDataV1[]>;\n`;
+const starterText = `import { expandGameDataV1, type CompactSudokuGameDataV1, type SudokuGameDataV1 } from "../gameData";\nimport type { Difficulty } from "../types";\nconst compactStarters = ${JSON.stringify({ ...starters, expert: progress.experts.map(compactGameDataV1) })} satisfies Record<Difficulty, CompactSudokuGameDataV1[]>;\nexport const starterPuzzlesByDifficulty = Object.fromEntries(Object.entries(compactStarters).map(([d,games])=>[d,games.map(expandGameDataV1)])) as Record<Difficulty, SudokuGameDataV1[]>;\n`;
 await writeFile("src/generated/starterPuzzles.ts.tmp", starterText);
-await writeFile(
-	"src/generated/curatedExpert.v1.ts.tmp",
-	formatCuratedExpertModule(progress.experts),
-);
 await rename(
 	"src/generated/starterPuzzles.ts.tmp",
 	"src/generated/starterPuzzles.ts",
-);
-await rename(
-	"src/generated/curatedExpert.v1.ts.tmp",
-	"src/generated/curatedExpert.v1.ts",
 );
 console.log(JSON.stringify(report, null, 2));

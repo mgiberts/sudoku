@@ -536,7 +536,181 @@ const compact = {
 			id: "sdk-v1-master-1lkapjq",
 		},
 	],
-	expert: [],
+	expert: [
+		{
+			version: 1,
+			difficulty: "expert",
+			puzzle:
+				"000000004004068900000274810400100069030800000910000200001700080600080070800030600",
+			solution:
+				"768915324124368957593274816487123569236859741915647238351796482649582173872431695",
+			clues: 28,
+			seed: 5300538156222286,
+			source: "starter",
+			generatedAt: "2026-09-11T18:45:44.903Z",
+			assessment: {
+				policyVersion: 2,
+				ratingVersion: 1,
+				repertoire: "expert",
+				status: "solved",
+				profile: {
+					placements: 53,
+					meanAvailableFraction: 0.39707911836020565,
+					hiddenEpisodes: 23,
+					demandingDeductions: 4,
+					episodes: [
+						{
+							progress: 0.32075471698113206,
+							deductions: 1,
+						},
+						{
+							progress: 0.3584905660377358,
+							deductions: 1,
+						},
+						{
+							progress: 0.39622641509433965,
+							deductions: 1,
+						},
+						{
+							progress: 0.4339622641509434,
+							deductions: 1,
+						},
+					],
+					progressBands: 2,
+					singlesScore: 0.5184415728953689,
+				},
+			},
+			rating: {
+				version: 1,
+				tier: "expert",
+				status: "solved",
+				strongestTechnique: "Alternating inference chain",
+				bottlenecks: 4,
+			},
+			generator: {
+				name: "rated-puzzle-generator",
+				version: "0.2.0",
+				runtime: "bun",
+				durationMs: 3293.5856670000003,
+				attempts: 101,
+			},
+			id: "sdk-v1-expert-0h4akl2",
+		},
+		{
+			version: 1,
+			difficulty: "expert",
+			puzzle:
+				"060900080000001070001840200003400008240000503006000040100209050000500300059380000",
+			solution:
+				"462973185385621974971845236713452698248796513596138742134269857827514369659387421",
+			clues: 28,
+			seed: 3734539429311697,
+			source: "starter",
+			generatedAt: "2026-09-11T18:45:49.015Z",
+			assessment: {
+				policyVersion: 2,
+				ratingVersion: 1,
+				repertoire: "expert",
+				status: "solved",
+				profile: {
+					placements: 53,
+					meanAvailableFraction: 0.35907782085151335,
+					hiddenEpisodes: 11,
+					demandingDeductions: 6,
+					episodes: [
+						{
+							progress: 0.18867924528301888,
+							deductions: 4,
+						},
+						{
+							progress: 0.2641509433962264,
+							deductions: 1,
+						},
+						{
+							progress: 0.33962264150943394,
+							deductions: 1,
+						},
+					],
+					progressBands: 2,
+					singlesScore: 0.4242346744799037,
+				},
+			},
+			rating: {
+				version: 1,
+				tier: "expert",
+				status: "solved",
+				strongestTechnique: "Alternating inference chain",
+				bottlenecks: 6,
+			},
+			generator: {
+				name: "rated-puzzle-generator",
+				version: "0.2.0",
+				runtime: "bun",
+				durationMs: 4110.115834000001,
+				attempts: 124,
+			},
+			id: "sdk-v1-expert-19woz3v",
+		},
+		{
+			version: 1,
+			difficulty: "expert",
+			puzzle:
+				"207040100560000020008000060700400201000190000100008000002004306000930050006700014",
+			solution:
+				"297645183564381729318279465785463291623197548149528637952814376471936852836752914",
+			clues: 28,
+			seed: 7424760593145641,
+			source: "starter",
+			generatedAt: "2026-09-11T18:45:56.542Z",
+			assessment: {
+				policyVersion: 2,
+				ratingVersion: 1,
+				repertoire: "expert",
+				status: "solved",
+				profile: {
+					placements: 53,
+					meanAvailableFraction: 0.4839447441959254,
+					hiddenEpisodes: 14,
+					demandingDeductions: 7,
+					episodes: [
+						{
+							progress: 0.1509433962264151,
+							deductions: 4,
+						},
+						{
+							progress: 0.16981132075471697,
+							deductions: 1,
+						},
+						{
+							progress: 0.2641509433962264,
+							deductions: 1,
+						},
+						{
+							progress: 0.4528301886792453,
+							deductions: 1,
+						},
+					],
+					progressBands: 2,
+					singlesScore: 0.39010309960015044,
+				},
+			},
+			rating: {
+				version: 1,
+				tier: "expert",
+				status: "solved",
+				strongestTechnique: "Alternating inference chain",
+				bottlenecks: 7,
+			},
+			generator: {
+				name: "rated-puzzle-generator",
+				version: "0.2.0",
+				runtime: "bun",
+				durationMs: 7525.353292,
+				attempts: 222,
+			},
+			id: "sdk-v1-expert-1pqhiyq",
+		},
+	],
 } satisfies Record<Difficulty, CompactSudokuGameDataV1[]>;
 export const starterPuzzlesByDifficulty = Object.fromEntries(
 	Object.entries(compact).map(([d, games]) => [d, games.map(expandGameDataV1)]),

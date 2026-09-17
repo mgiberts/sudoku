@@ -5,7 +5,13 @@ import type { Difficulty } from "../types";
 import { curatedExpertGames } from "./curatedExpert.v1";
 import { starterPuzzlesByDifficulty } from "./starterPuzzles";
 
-const STARTER_DIFFICULTIES: Difficulty[] = ["easy", "medium", "hard", "master"];
+const STARTER_DIFFICULTIES: Difficulty[] = [
+	"easy",
+	"medium",
+	"hard",
+	"master",
+	"expert",
+];
 
 describe("starter puzzles", () => {
 	it("ships the configured starter counts and validates one board per difficulty", () => {
@@ -23,15 +29,8 @@ describe("starter puzzles", () => {
 		}
 	});
 
-	it("does not ship starter Expert games", () => {
-		expect(starterPuzzlesByDifficulty.expert).toEqual([]);
-	});
-
-	it("ships the configured Expert count and validates one representative board", () => {
-		expect(curatedExpertGames).toHaveLength(
-			difficultyPolicy.levels.expert.starterCount,
-		);
-
+	it("retains the historical Expert catalog as offline source data", () => {
+		expect(curatedExpertGames).toHaveLength(100);
 		for (const game of curatedExpertGames) {
 			expect(game.difficulty).toBe("expert");
 		}

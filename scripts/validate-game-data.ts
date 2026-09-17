@@ -9,11 +9,14 @@ type Options = {
 	requireExpertCount: number | null;
 };
 
-const STARTER_DIFFICULTIES: Difficulty[] = ["easy", "medium", "hard", "master"];
+const STARTER_DIFFICULTIES: Difficulty[] = [
+	"easy", "medium", "hard", "master", "expert",
+];
 
 const options = parseArgs(process.argv.slice(2));
 const errors: string[] = [];
 const seenIds = new Set<string>();
+const archivedExpertIds = new Set<string>();
 let curatedExpertMockCount = 0;
 let curatedExpertRealCount = 0;
 
@@ -31,12 +34,8 @@ for (const difficulty of STARTER_DIFFICULTIES) {
 	}
 }
 
-if (starterPuzzlesByDifficulty.expert.length !== 0) {
-	errors.push("Expert starter cache must stay empty; use curatedExpertGames");
-}
-
 for (const game of curatedExpertGames) {
-	validateGame(game, "curated");
+	validateGame(game, "curated", archivedExpertIds);
 
 	if (isMockGame(game)) {
 		curatedExpertMockCount += 1;
@@ -72,14 +71,18 @@ console.info(
 				count + starterPuzzlesByDifficulty[difficulty].length,
 			0,
 		)}`,
-		`curatedExpert=${curatedExpertGames.length}`,
+		`archivedExpert=${curatedExpertGames.length}`,
 		`curatedExpertReal=${curatedExpertRealCount}`,
 		`curatedExpertMock=${curatedExpertMockCount}`,
 		`uniqueIds=${seenIds.size}`,
 	].join(" "),
 );
 
-function validateGame(game: SudokuGameDataV1, expectedSource: string): void {
+function validateGame(
+	game: SudokuGameDataV1,
+	expectedSource: string,
+	ids = seenIds,
+): void {
 	const validationErrors = validateGameDataV1(game, { requireUnique: true });
 
 	if (validationErrors.length > 0) {
@@ -92,11 +95,11 @@ function validateGame(game: SudokuGameDataV1, expectedSource: string): void {
 		);
 	}
 
-	if (seenIds.has(game.id)) {
+	if (ids.has(game.id)) {
 		errors.push(`${game.id}: duplicate game id`);
 	}
 
-	seenIds.add(game.id);
+	ids.add(game.id);
 }
 
 function isMockGame(game: SudokuGameDataV1): boolean {

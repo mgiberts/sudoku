@@ -15,7 +15,7 @@ import {
 import { generateRatedGame } from "../src/puzzleGeneration";
 import type { Difficulty } from "../src/types";
 
-type StarterDifficulty = Exclude<Difficulty, "expert">;
+type StarterDifficulty = Difficulty;
 
 type Options = {
 	count: number | null;
@@ -29,6 +29,7 @@ const STARTER_DIFFICULTIES: StarterDifficulty[] = [
 	"medium",
 	"hard",
 	"master",
+	"expert",
 ];
 const GENERATOR_NAME = "starter-puzzle-generator";
 const GENERATOR_VERSION = "0.1.0";
@@ -40,6 +41,7 @@ const gamesByDifficulty: Record<StarterDifficulty, SudokuGameDataV1[]> = {
 	medium: [],
 	hard: [],
 	master: [],
+	expert: [],
 };
 
 const requestedCount = (difficulty: StarterDifficulty) =>
@@ -120,7 +122,7 @@ function parseArgs(args: string[]): Options {
 			? Number(readOption(args, "--count", "3"))
 			: null,
 		output: readOption(args, "--output", DEFAULT_OUTPUT),
-		timeoutMs: Number(readOption(args, "--timeout-ms", "10000")),
+		timeoutMs: Number(readOption(args, "--timeout-ms", "15000")),
 		maxTotalAttempts: Number(readOption(args, "--max-total-attempts", "100")),
 	};
 }
@@ -160,7 +162,7 @@ function formatStarterModule(
 		medium: gamesByDifficulty.medium.map(compactGameDataV1),
 		hard: gamesByDifficulty.hard.map(compactGameDataV1),
 		master: gamesByDifficulty.master.map(compactGameDataV1),
-		expert: [],
+		expert: gamesByDifficulty.expert.map(compactGameDataV1),
 	} satisfies Record<Difficulty, CompactSudokuGameDataV1[]>;
 
 	return `import { expandGameDataV1, type CompactSudokuGameDataV1, type SudokuGameDataV1 } from "../gameData";

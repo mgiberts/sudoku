@@ -66,6 +66,16 @@ export const BEST_TIME_ERROR_LIMITS: Record<Difficulty, number> = {
 	expert: 3,
 };
 
+export const isNewBestTime = (
+	difficulty: Difficulty,
+	score: BestTime,
+	current?: BestTime,
+): boolean =>
+	score.errors < BEST_TIME_ERROR_LIMITS[difficulty] &&
+	(!current ||
+		score.seconds < current.seconds ||
+		(score.seconds === current.seconds && score.errors < current.errors));
+
 const createSudokuStorage = () => {
 	const removeGame = (): void => {
 		localStorage.removeItem(GAME_STORAGE_KEY);
@@ -340,19 +350,8 @@ const createSudokuStorage = () => {
 		score: BestTime,
 	): BestTimes => {
 		const bestTimes = loadBestTimes();
-		const threshold = BEST_TIME_ERROR_LIMITS[difficulty];
-
-		if (score.errors >= threshold) {
-			return bestTimes;
-		}
-
 		const current = bestTimes[difficulty];
-		const isBetter =
-			!current ||
-			score.seconds < current.seconds ||
-			(score.seconds === current.seconds && score.errors < current.errors);
-
-		if (!isBetter) {
+		if (!isNewBestTime(difficulty, score, current)) {
 			return bestTimes;
 		}
 

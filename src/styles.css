@@ -802,6 +802,13 @@ legend {
 	color: var(--text-muted);
 }
 
+.completion-high-score {
+	display: block;
+	margin-top: var(--space-2);
+	color: var(--sparkle);
+	font-weight: 700;
+}
+
 .dialog-actions {
 	display: flex;
 	justify-content: center;
