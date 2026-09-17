@@ -114,6 +114,22 @@ it("starts at most one speculative refill while reset is canceled on the same bo
 	fireEvent.click(screen.getByRole("button", { name: "Cancel" }));
 });
 
+it("shows the pause dialog in Zen mode and waits for an explicit resume", () => {
+	localStorage.clear();
+	sudokuStorage.saveSettings({
+		...sudokuStorage.loadSettings(),
+		playMode: "zen",
+	});
+	render(<App />);
+	expect(screen.queryByTitle("Pause")).toBeNull();
+	act(() => window.dispatchEvent(new Event("blur")));
+	expect(screen.getByRole("dialog", { name: "Game paused" })).toBeTruthy();
+	act(() => window.dispatchEvent(new Event("focus")));
+	expect(screen.getByRole("dialog", { name: "Game paused" })).toBeTruthy();
+	fireEvent.click(screen.getByRole("button", { name: "Resume" }));
+	expect(screen.queryByRole("dialog", { name: "Game paused" })).toBeNull();
+});
+
 it("shows the Brain and custom copy for a zero-error Expert finish", () => {
 	renderCompletion("expert", 0, true);
 	const dialog = screen.getByRole("dialog", { name: "Expert puzzle complete" });

@@ -17,7 +17,7 @@ export type GameAction =
 	| { type: "enter"; digit: Digit }
 	| { type: "erase" }
 	| { type: "undo" }
-	| { type: "pause" }
+	| { type: "pause"; at?: number }
 	| { type: "resume" }
 	| { type: "new-game"; difficulty: Difficulty }
 	| { type: "new-game-data"; game: SudokuGameDataV1 };
@@ -67,7 +67,7 @@ export const gameReducer = (
 			}
 			return undoLastEntry(state);
 		case "pause":
-			return pauseGame(state);
+			return pauseGame(state, action.at);
 		case "resume":
 			return resumeGame(state);
 		case "new-game":
@@ -132,12 +132,12 @@ export const getElapsedSeconds = (
 	return Math.max(0, Math.floor(elapsedMilliseconds / 1000));
 };
 
-const pauseGame = (state: GameState): GameState => {
+const pauseGame = (state: GameState, at = Date.now()): GameState => {
 	if (state.completedAt !== null || state.pausedAt !== null) {
 		return state;
 	}
 
-	const pausedAt = Date.now();
+	const pausedAt = at;
 
 	return {
 		...state,
