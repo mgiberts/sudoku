@@ -16,7 +16,6 @@ import {
 } from "../src/generationMetrics";
 import { generateRatedGame } from "../src/puzzleGeneration";
 import type { Difficulty } from "../src/types";
-import { formatCuratedExpertModule } from "./game-data-module";
 
 assertReviewedPolicy(difficultyPolicy);
 const directory = "scripts/output/reviewed";
@@ -61,7 +60,7 @@ for (const difficulty of Object.keys(difficultyPolicy.levels) as Difficulty[]) {
 			timeoutMs: 10000,
 		});
 		if (game && !games.some((g) => g.id === game.id)) {
-			game.source = difficulty === "expert" ? "curated" : "starter";
+			game.source = "starter";
 			games.push(game);
 		} else if (game) {
 			metrics.accepted = false;
@@ -83,7 +82,7 @@ for (const game of Object.values(progress.games).flat()) {
 const compact = Object.fromEntries(
 	Object.entries(progress.games).map(([d, games]) => [
 		d,
-		d === "expert" ? [] : games.map(compactGameDataV1),
+		games.map(compactGameDataV1),
 	]),
 );
 await writeFile(
@@ -96,15 +95,7 @@ await writeFile(
 
 const compact=${JSON.stringify(compact)} satisfies Record<Difficulty,CompactSudokuGameDataV1[]>;export const starterPuzzlesByDifficulty=Object.fromEntries(Object.entries(compact).map(([d,games])=>[d,games.map(expandGameDataV1)])) as Record<Difficulty,SudokuGameDataV1[]>;`,
 );
-await writeFile(
-	"src/generated/curatedExpert.v1.ts.tmp",
-	formatCuratedExpertModule(progress.games.expert ?? []),
-);
 await rename(
 	"src/generated/starterPuzzles.ts.tmp",
 	"src/generated/starterPuzzles.ts",
-);
-await rename(
-	"src/generated/curatedExpert.v1.ts.tmp",
-	"src/generated/curatedExpert.v1.ts",
 );

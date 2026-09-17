@@ -10,17 +10,20 @@ import { useEffect, useRef, useState } from "react";
 import { BestTimesPanel } from "./BestTimesPanel";
 import { Board } from "./Board";
 import { Controls } from "./Controls";
-import { requiresRating } from "./difficultyRating";
 import { formatDuration } from "./formatDuration";
 import { GameDialog } from "./GameDialog";
-import { selectCuratedExpertGame, selectStarterGame } from "./gameCatalog";
+import type { SudokuGameDataV1 } from "./gameData";
 import { getElapsedSeconds, hasPlayerProgress } from "./gameState";
 import { Header } from "./Header";
 import { Keypad } from "./Keypad";
 import { SettingsProvider, useSettings } from "./SettingsContext";
 import { difficultyLabels, SettingsPanel } from "./SettingsPanel";
 import { SudokuProvider, useGame } from "./SudokuContext";
-import { BEST_TIME_ERROR_LIMITS, sudokuStorage } from "./storage";
+import {
+	BEST_TIME_ERROR_LIMITS,
+	isNewBestTime,
+	sudokuStorage,
+} from "./storage";
 import type { BestTimes, Difficulty } from "./types";
 import { usePuzzleQueue } from "./usePuzzleQueue";
 
@@ -37,17 +40,28 @@ export const App = () => {
 const SudokuApp = () => {
 	const { state, dispatch } = useGame();
 	const { settings, updateDifficulty } = useSettings();
-	const { consumeQueuedGame, isWorking, requestQueuedGame, warmQueue } =
-		usePuzzleQueue();
+	const {
+		consumeQueuedGame,
+		isWorking,
+		requestQueuedGame,
+		reserveQueuedGame,
+		restoreQueuedGame,
+	} = usePuzzleQueue(settings.difficulty);
 	const [generationError, setGenerationError] = useState<string | null>(null);
 	const loadingRequestRef = useRef<symbol | null>(null);
 	const [bestTimes, setBestTimes] = useState<BestTimes>(() =>
 		sudokuStorage.loadBestTimes(),
 	);
+	const [highScoreFinish, setHighScoreFinish] = useState<{
+		key: string;
+		isHighScore: boolean;
+	} | null>(null);
+	const scoredCompletionRef = useRef<string | null>(null);
 	const [bestTimesOpen, setBestTimesOpen] = useState(false);
 	const [settingsOpen, setSettingsOpen] = useState(false);
 	const [resetConfirmOpen, setResetConfirmOpen] = useState(false);
-	const [expertWelcomeOpen, setExpertWelcomeOpen] = useState(false);
+	const reservedResetGameRef = useRef<SudokuGameDataV1 | null>(null);
+	const resetPrefetchGameKeyRef = useRef<string | null>(null);
 	const [loadingDifficulty, setLoadingDifficulty] = useState<Difficulty | null>(
 		null,
 	);
@@ -61,6 +75,9 @@ const SudokuApp = () => {
 		if (!completedAt) {
 			return;
 		}
+		const completionKey = `${difficulty}:${startedAt}:${completedAt}`;
+		if (scoredCompletionRef.current === completionKey) return;
+		scoredCompletionRef.current = completionKey;
 
 		const elapsedSeconds = Math.max(
 			0,
@@ -68,52 +85,35 @@ const SudokuApp = () => {
 				(elapsedBeforePause + Math.max(0, completedAt - startedAt)) / 1000,
 			),
 		);
-		setBestTimes(
-			sudokuStorage.recordBestTime(difficulty, {
-				seconds: elapsedSeconds,
-				errors,
-			}),
-		);
+		const score = { seconds: elapsedSeconds, errors };
+		const previous = sudokuStorage.loadBestTimes()[difficulty];
+		setHighScoreFinish({
+			key: completionKey,
+			isHighScore: isNewBestTime(difficulty, score, previous),
+		});
+		setBestTimes(sudokuStorage.recordBestTime(difficulty, score));
 	}, [completedAt, difficulty, elapsedBeforePause, errors, startedAt]);
 
-	useEffect(() => {
-		if (settings.difficulty !== "expert") {
-			warmQueue([settings.difficulty]);
-		}
-	}, [settings.difficulty, warmQueue]);
-
-	const startNewDifficulty = (
-		difficulty: Difficulty,
-		options: { showExpertWelcome?: boolean } = {},
-	) => {
+	const startNewDifficulty = (difficulty: Difficulty) => {
 		updateDifficulty(difficulty);
 		startNewGame(difficulty);
-
-		if (difficulty === "expert" && options.showExpertWelcome) {
-			setExpertWelcomeOpen(true);
-		}
+		setSettingsOpen(false);
 	};
 
-	const startNewGame = async (difficulty: Difficulty) => {
+	const startNewGame = async (
+		difficulty: Difficulty,
+		reservedGame: SudokuGameDataV1 | null = null,
+	) => {
 		if (loadingRequestRef.current) {
 			return;
 		}
 
 		setGenerationError(null);
-		const game =
-			difficulty === "expert"
-				? selectCuratedExpertGame()
-				: (consumeQueuedGame(difficulty) ?? selectStarterGame(difficulty));
+		const game = reservedGame ?? consumeQueuedGame(difficulty);
 
 		if (game) {
+			sudokuStorage.recordRecentGameId(difficulty, game.id, 12);
 			dispatch({ type: "new-game-data", game });
-			return;
-		}
-
-		if (difficulty === "expert") {
-			setGenerationError(
-				"No validated Expert puzzle is available. Please try again later.",
-			);
 			return;
 		}
 
@@ -128,17 +128,26 @@ const SudokuApp = () => {
 		}
 
 		if (queuedGame) {
+			sudokuStorage.recordRecentGameId(difficulty, queuedGame.id, 12);
 			dispatch({ type: "new-game-data", game: queuedGame });
-		} else if (requiresRating(difficulty)) {
+		} else {
 			setGenerationError(
 				`No validated ${difficultyLabels[difficulty]} puzzle is available. Please try again later.`,
 			);
-		} else {
-			dispatch({ type: "new-game", difficulty });
 		}
 
 		loadingRequestRef.current = null;
 		setLoadingDifficulty(null);
+	};
+
+	const openResetConfirmation = () => {
+		if (resetConfirmOpen || loadingRequestRef.current) return;
+		const gameKey = `${state.difficulty}:${state.seed}:${state.startedAt}`;
+		if (resetPrefetchGameKeyRef.current !== gameKey) {
+			resetPrefetchGameKeyRef.current = gameKey;
+			reservedResetGameRef.current = reserveQueuedGame(state.difficulty);
+		}
+		setResetConfirmOpen(true);
 	};
 
 	const requestDifficultyChange = (difficulty: Difficulty) => {
@@ -151,9 +160,7 @@ const SudokuApp = () => {
 			return;
 		}
 
-		startNewDifficulty(difficulty, {
-			showExpertWelcome: difficulty === "expert",
-		});
+		startNewDifficulty(difficulty);
 	};
 
 	return (
@@ -163,12 +170,15 @@ const SudokuApp = () => {
 				<Header
 					bestTimesOpen={bestTimesOpen}
 					onBestTimesToggle={() => setBestTimesOpen((open) => !open)}
-					onReset={() => setResetConfirmOpen(true)}
+					onReset={openResetConfirmation}
 					onSettingsToggle={() => setSettingsOpen((open) => !open)}
 					settingsOpen={settingsOpen}
 					workerActive={isWorking}
 				/>
-				<Controls onReset={() => setResetConfirmOpen(true)} />
+				<Controls
+					onReset={openResetConfirmation}
+					resetDisabled={loadingDifficulty !== null}
+				/>
 
 				<Board />
 				<Keypad />
@@ -193,21 +203,28 @@ const SudokuApp = () => {
 			<CompletionDialog
 				open={!!state.completedAt}
 				errors={state.errors}
+				isHighScore={
+					highScoreFinish?.key ===
+						`${state.difficulty}:${state.startedAt}:${state.completedAt}` &&
+					highScoreFinish.isHighScore
+				}
+				newPuzzleDisabled={loadingDifficulty !== null}
 				onNewPuzzle={() => startNewGame(state.difficulty)}
 			/>
 			<ResetConfirmationDialog
 				open={resetConfirmOpen}
-				onCancel={() => setResetConfirmOpen(false)}
-				onConfirm={() => {
-					startNewGame(state.difficulty);
+				onCancel={() => {
+					if (reservedResetGameRef.current) {
+						restoreQueuedGame(state.difficulty, reservedResetGameRef.current);
+						reservedResetGameRef.current = null;
+					}
 					setResetConfirmOpen(false);
 				}}
-			/>
-			<ExpertWelcomeDialog
-				open={expertWelcomeOpen}
-				onStart={() => {
-					setExpertWelcomeOpen(false);
-					setSettingsOpen(false);
+				onConfirm={() => {
+					const reservedGame = reservedResetGameRef.current;
+					reservedResetGameRef.current = null;
+					startNewGame(state.difficulty, reservedGame);
+					setResetConfirmOpen(false);
 				}}
 			/>
 			<LoadingPuzzleDialog difficulty={loadingDifficulty} />
@@ -218,11 +235,8 @@ const SudokuApp = () => {
 					difficulty={pendingDifficulty}
 					onCancel={() => setPendingDifficulty(null)}
 					onConfirm={() => {
-						startNewDifficulty(pendingDifficulty, {
-							showExpertWelcome: pendingDifficulty === "expert",
-						});
+						startNewDifficulty(pendingDifficulty);
 						setPendingDifficulty(null);
-						setSettingsOpen(false);
 					}}
 				/>
 			) : null}
@@ -241,22 +255,22 @@ const LoadingPuzzleDialog = ({
 			actions={null}
 			icon={<LoaderCircle className="spin-icon" size={32} />}
 			label="Preparing puzzle"
-			message={
-				difficulty
-					? `Generating a unique ${difficultyLabels[difficulty]} puzzle.`
-					: ""
-			}
-			title="Preparing puzzle"
+			message={difficulty ? "The game board is updating. Please wait." : ""}
+			title="Updating game board"
 		/>
 	);
 };
 
-const CompletionDialog = ({
+export const CompletionDialog = ({
 	errors,
+	isHighScore,
+	newPuzzleDisabled,
 	onNewPuzzle,
 	open,
 }: {
 	errors: number;
+	isHighScore: boolean;
+	newPuzzleDisabled: boolean;
 	onNewPuzzle: () => void;
 	open?: boolean;
 }) => {
@@ -272,58 +286,47 @@ const CompletionDialog = ({
 	const difficultyArticle = difficultyLabel === "Easy" ? "an" : "a";
 	const isOverBestTimeLimit =
 		errors >= BEST_TIME_ERROR_LIMITS[state.difficulty];
+	const isPerfectExpert = state.difficulty === "expert" && errors === 0;
 
 	return (
 		<GameDialog
 			open={open}
 			actions={
-				<button className="primary-action" onClick={onNewPuzzle} type="button">
+				<button
+					className="primary-action"
+					disabled={newPuzzleDisabled}
+					onClick={onNewPuzzle}
+					type="button"
+				>
 					<Play size={18} />
 					New puzzle
 				</button>
 			}
-			icon={<Sparkles size={32} />}
-			label="Puzzle complete"
+			icon={isPerfectExpert ? <Brain size={32} /> : <Sparkles size={32} />}
+			label={isPerfectExpert ? "Expert puzzle complete" : "Puzzle complete"}
 			message={
-				playMode === "zen" ? (
-					<>Finished in {duration}.</>
-				) : (
-					<>
-						Finished {difficultyArticle} {difficultyLabel} puzzle in {duration}{" "}
-						with{" "}
-						<span
-							className={isOverBestTimeLimit ? "score-errors over-limit" : ""}
-						>
-							{errors} {errors === 1 ? "error" : "errors"}
-						</span>
-					</>
-				)
+				<>
+					{isPerfectExpert ? (
+						<>You solved an Expert puzzle in {duration} with 0 errors.</>
+					) : playMode === "zen" ? (
+						<>Finished in {duration}.</>
+					) : (
+						<>
+							Finished {difficultyArticle} {difficultyLabel} puzzle in{" "}
+							{duration} with{" "}
+							<span
+								className={isOverBestTimeLimit ? "score-errors over-limit" : ""}
+							>
+								{errors} {errors === 1 ? "error" : "errors"}
+							</span>
+						</>
+					)}
+					{isHighScore && (
+						<span className="completion-high-score">New best time!</span>
+					)}
+				</>
 			}
-			title="Complete"
-		/>
-	);
-};
-
-const ExpertWelcomeDialog = ({
-	onStart,
-	open,
-}: {
-	onStart: () => void;
-	open?: boolean;
-}) => {
-	return (
-		<GameDialog
-			open={open}
-			actions={
-				<button className="primary-action" onClick={onStart} type="button">
-					<Play size={18} />
-					Start
-				</button>
-			}
-			icon={<Brain size={32} />}
-			label="Curated Sudoku"
-			message="Welcome to curated Expert Sudoku. Expert puzzles are carefully pre-generated and verified to have a unique solution."
-			title="Expert Sudoku"
+			title={isPerfectExpert ? "Expert mastery" : "Complete"}
 		/>
 	);
 };

@@ -7,10 +7,7 @@ import type {
 
 self.addEventListener("message", (event: MessageEvent<PuzzleWorkerRequest>) => {
 	const message = event.data;
-	if (message.type === "warm") {
-		for (const difficulty of message.difficulties)
-			generateAndPost(crypto.randomUUID(), difficulty);
-	} else generateAndPost(message.requestId, message.difficulty);
+	generateAndPost(message.requestId, message.difficulty);
 });
 function generateAndPost(requestId: string, difficulty: WorkerDifficulty) {
 	const { game, metrics } = generateRatedGame(difficulty);

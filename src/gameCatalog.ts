@@ -1,15 +1,12 @@
 import { hasCurrentAssessment, type SudokuGameDataV1 } from "./gameData";
-import { curatedExpertGames } from "./generated/curatedExpert.v1";
 import { starterPuzzlesByDifficulty } from "./generated/starterPuzzles";
 import { recordGenerationEvent } from "./generationMetrics";
 import { sudokuStorage } from "./storage";
 import type { Difficulty } from "./types";
 
-const RECENT_STARTER_LIMIT = 2;
-const RECENT_EXPERT_LIMIT = 12;
-
+const RECENT_STARTER_LIMIT = 12;
 export const selectStarterGame = (
-	difficulty: Exclude<Difficulty, "expert">,
+	difficulty: Difficulty,
 ): SudokuGameDataV1 | null => {
 	const cachedGame = sudokuStorage.consumeGeneratedGameCache(difficulty);
 
@@ -37,19 +34,6 @@ export const selectStarterGame = (
 	}
 
 	return starterGame;
-};
-
-export const selectCuratedExpertGame = (): SudokuGameDataV1 | null => {
-	const game = pickGameAvoidingRecent(
-		curatedExpertGames.filter(hasCurrentAssessment),
-		sudokuStorage.loadRecentGameIds("expert"),
-	);
-
-	if (game) {
-		sudokuStorage.recordRecentGameId("expert", game.id, RECENT_EXPERT_LIMIT);
-	}
-
-	return game;
 };
 
 export const pickGameAvoidingRecent = (

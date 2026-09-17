@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it } from "vitest";
 import { starterPuzzlesByDifficulty } from "./generated/starterPuzzles";
-import { sudokuStorage } from "./storage";
+import { isNewBestTime, sudokuStorage } from "./storage";
 import type { Digit } from "./types";
 
 describe("sudoku storage", () => {
@@ -125,6 +125,25 @@ describe("sudoku storage", () => {
 		expect(
 			sudokuStorage.recordBestTime("hard", { seconds: 130, errors: 0 }).hard,
 		).toEqual({ seconds: 120, errors: 1 });
+	});
+
+	it("identifies a high score using the same rules as best-time storage", () => {
+		expect(isNewBestTime("expert", { seconds: 900, errors: 0 })).toBe(true);
+		expect(
+			isNewBestTime(
+				"expert",
+				{ seconds: 900, errors: 0 },
+				{ seconds: 900, errors: 1 },
+			),
+		).toBe(true);
+		expect(
+			isNewBestTime(
+				"expert",
+				{ seconds: 900, errors: 0 },
+				{ seconds: 900, errors: 0 },
+			),
+		).toBe(false);
+		expect(isNewBestTime("expert", { seconds: 800, errors: 3 })).toBe(false);
 	});
 
 	it("ignores best times at or above the difficulty error threshold", () => {
